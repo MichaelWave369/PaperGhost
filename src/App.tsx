@@ -5,6 +5,9 @@ import { allPublications, deletePublication, savePublication } from './lib/db';
 import { importFile } from './lib/imports';
 import { exportShelfBackup, restoreShelfBackup } from './lib/backup';
 import { demoFile } from './lib/demo';
+import { guideFile } from './lib/commons';
+import type { OfflineGuide } from './lib/commons';
+import { CommonsLibrary } from './components/CommonsLibrary';
 import { friendlyBytes, localDate } from './lib/utils';
 import { Reader } from './components/Reader';
 import { GhostMark } from './components/GhostMark';
@@ -102,6 +105,24 @@ function App() {
     }
   };
 
+  const openFieldGuide = async (guide: OfflineGuide) => {
+    if (busy) return;
+    const existing = publications.find(publication => publication.fileName === 'Field-Library-' + guide.id + '.md');
+    if (existing) { setActiveId(existing.id); return; }
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const publication = await importFile(guideFile(guide));
+      await refresh();
+      setActiveId(publication.id);
+    } catch (reason) {
+      setError('Field Guide could not open: ' + String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const onDrop = (event: DragEvent<HTMLElement>) => {
     event.preventDefault();
     setDragging(false);
@@ -140,7 +161,7 @@ function App() {
               <GhostMark size={43} />
               <span>PaperGhost<small>THE DIGITAL PAPER VESSEL</small></span>
             </a>
-            <div className="topbar-right"><span className="offline-tag"><span aria-hidden="true">●</span> LOCAL-FIRST</span><a href="https://github.com/MichaelWave369/PaperGhost" target="_blank" rel="noreferrer">Source &amp; roadmap ↗</a></div>
+            <div className="topbar-right"><span className="offline-tag"><span aria-hidden="true">●</span> LOCAL-FIRST</span><a href="#commons-library">Free Library</a><a href="https://github.com/MichaelWave369/PaperGhost" target="_blank" rel="noreferrer">Source &amp; roadmap ↗</a></div>
           </header>
           <main id="main">
             <section className="masthead" aria-labelledby="hero-title">
@@ -155,6 +176,7 @@ function App() {
                     <div className="hero-buttons">
                       <button className="primary-button" disabled={busy} onClick={() => fileInput.current?.click()}>{busy ? 'Importing…' : '+ Add publications'}</button>
                       <button className="outline-button" disabled={busy} onClick={() => void importFiles([demoFile()])}>Open Issue Zero</button>
+                      <a href="#commons-library" className="outline-button library-hero-link">Browse free library</a>
                     </div>
                     <p className="privacy-caption">Private by default. Files stay in this browser. No account required.</p>
                   </div>
@@ -202,6 +224,12 @@ function App() {
               </div>
               {publications.length > 0 ? <div className="drop-hint">Drop more PDF, EPUB, CBZ or text files anywhere on the shelf to import.</div> : null}
             </section>
+            <CommonsLibrary
+              publications={publications}
+              busy={busy}
+              onAddGuide={guide => void openFieldGuide(guide)}
+              onOpenPublication={setActiveId}
+            />
             <section className="system-strip" aria-labelledby="system-title">
               <p className="eyebrow" id="system-title">BENEATH THE PAGE</p>
               <div className="system-grid">
