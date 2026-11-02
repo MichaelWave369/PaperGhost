@@ -1,4 +1,4 @@
-import { defineConfig } from 'vitest/config';
+import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
@@ -21,6 +21,5 @@ export default defineConfig({
         icons: [{ src: 'ghost.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' }]
       }
     })
-  ],
-  test: { environment: 'node', include: ['src/**/*.test.ts'] }
+  ]
 });
