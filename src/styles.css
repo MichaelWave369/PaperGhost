@@ -277,3 +277,54 @@ h1 em { color: #d8bf84; font-weight: 400; }
 .bookmark-actions { display: flex; flex-wrap: wrap; gap: 10px; }
 .bookmark-actions button { margin: 10px 0 0; padding: 9px 12px; }
 .bookmark-actions button:last-child { background: transparent; border: 1px solid #a88d79; color: #693e35; }
+
+/* Human Essentials Field Library, a fully static curated reading commons */
+.library-hero-link { display: inline-flex; align-items: center; text-decoration: none; }
+.commons-section { background: #f5efdf; padding: 48px max(5vw, 20px) 75px; }
+.commons-section > .section-topline, .commons-intro, .commons-explainer,
+.commons-controls, .commons-result-count, .commons-grid, .commons-disclaimer, .commons-no-results {
+  max-width: 1240px; margin-left: auto; margin-right: auto;
+}
+.commons-intro { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: 32px; padding: 39px 0 22px; }
+.commons-intro .eyebrow { color: #937143; }
+.commons-intro h2 { font-size: clamp(32px, 4.2vw, 58px); font-weight: 400; letter-spacing: -.065em; margin: 15px 0 20px; }
+.commons-intro h2 em { color: #a17b46; }
+.commons-lede { font: 15px/1.85 'Libre Baskerville', Georgia, serif; max-width: 760px; color: #57564f; }
+.commons-stamp { display: flex; flex-direction: column; align-items: center; justify-content: center; width: 155px; min-height: 150px; border: 2px double #c7ad72; border-radius: 50%; color: #69553c; transform: rotate(7deg); text-align: center; padding: 17px 7px; }
+.commons-stamp strong { font: 400 46px 'Libre Baskerville', Georgia, serif; letter-spacing: -.08em; }
+.commons-stamp span { font-size: 10px; font-weight: 700; letter-spacing: .1em; margin: 3px 0 8px; }
+.commons-stamp small { font-size: 8px; letter-spacing: .06em; }
+.commons-explainer { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 22px; border-top: 1px solid #d7cbb5; border-bottom: 1px solid #d7cbb5; padding: 21px 0; }
+.commons-explainer p { margin: 0; font-size: 12px; line-height: 1.85; color: #5d5b54; }
+.commons-controls { display: flex; flex-direction: column; gap: 21px; padding-top: 30px; }
+.commons-categories { display: flex; flex-wrap: wrap; gap: 8px; }
+.commons-categories button { border: 1px solid #c6b99e; color: #3b3d3c; background: transparent; border-radius: 26px; padding: 10px 13px; font-size: 11px; font-weight: 700; }
+.commons-categories button.active { color: #fff8e9; background: #203951; border-color: #203951; }
+.commons-categories button:hover:not(.active) { background: #e7dfcf; }
+.commons-search { display: flex; align-items: center; gap: 15px; font-size: 12px; font-weight: 700; flex-wrap: wrap; }
+.commons-search input { width: min(430px, 100%); flex: 1 1 250px; background: #fffdf5; color: #17293e; border: 1px solid #c5b99f; padding: 13px 14px; border-radius: 2px; }
+.commons-result-count { font-size: 11px; color: #77705f; margin-top: 17px; margin-bottom: 22px; }
+.commons-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 18px; }
+.commons-card { min-width: 0; display: flex; flex-direction: column; padding: 21px; border: 1px solid #cfc1a9; border-top: 4px solid #bba47f; background: #fffcf4; box-shadow: 4px 4px 0 #e3d8c6; }
+.commons-card.commons-guide { border-top-color: #284c60; background: #f8f4e9; }
+.commons-card-meta { display: flex; align-items: start; justify-content: space-between; gap: 10px; font-size: 9px; font-weight: 700; letter-spacing: .08em; color: #7b6c51; text-transform: uppercase; }
+.commons-card-meta span:last-child { text-align: right; }
+.commons-card-symbol { font: 35px 'Libre Baskerville', Georgia, serif; color: #b59757; margin: 20px 0 8px; }
+.commons-card h3 { font: 400 22px/1.42 'Libre Baskerville', Georgia, serif; letter-spacing: -.03em; color: #21344b; margin-bottom: 12px; }
+.commons-card-description { font-size: 12px; line-height: 1.8; color: #535a5d; flex: 1; }
+.commons-card-author { margin-top: 8px; font-size: 11px; font-weight: 700; color: #686354; }
+.commons-card-bottom { border-top: 1px solid #d8cbb4; margin-top: 16px; padding-top: 13px; display: flex; flex-direction: column; align-items: flex-start; gap: 12px; }
+.commons-card-bottom small { font-size: 10px; line-height: 1.55; color: #797264; }
+.commons-card-bottom a, .commons-card-bottom button { font: 700 12px 'DM Sans', system-ui, sans-serif; color: #fff8e8; background: #1a3855; border: 1px solid #1a3855; padding: 11px 14px; text-decoration: none; border-radius: 2px; }
+.commons-card-bottom a:hover, .commons-card-bottom button:hover:not(:disabled) { background: #2b5878; }
+.commons-disclaimer { color: #6b675e; font-size: 11px; line-height: 1.8; border-top: 1px solid #d7cbb5; padding-top: 22px; margin-top: 31px; }
+.commons-no-results { padding: 30px 0; color: #696459; font: italic 15px 'Libre Baskerville', Georgia, serif; }
+@media(max-width: 720px) {
+  .commons-intro { grid-template-columns: 1fr; }
+  .commons-stamp { width: 120px; min-height: 120px; }
+  .commons-stamp strong { font-size: 33px; }
+  .commons-explainer { grid-template-columns: 1fr; }
+  .commons-search { align-items: flex-start; flex-direction: column; }
+  .commons-search input { flex: unset; width: 100%; }
+  .commons-section { padding: 34px 23px 55px; }
+}

@@ -44,6 +44,14 @@ Source: PaperGhost / CodexOS Master Design Spec v0.1, July 4, 2026.
 - Import folder, batch metadata editing, richer annotations.
 - File size/memory performance audits and worker-backed processing.
 
+## Rung 2e: Human Essentials Field Library (this PR)
+
+- Curated free learning commons for practical human capabilities, in 7 topic categories.
+- 8 original MIT-licensed offline Markdown guides, imported to GhostShelf only with explicit reader action.
+- 12 free external works/resource links with source, rights and provider labels; no unlicensed bundling.
+- Free-text search, category filters, mobile-friendly and keyboard-accessible cards.
+- Tests for catalog IDs, coverage, source hostname allowlist, and offline guide content.
+
 ## Rung 3: Enter the Field Pressroom
 
 - Editor templates, layout blocks, cover creator, issue manifest.

@@ -18,6 +18,17 @@ Created from the July 4, 2026 *PaperGhost / CodexOS Master Design Spec v0.1*. Th
 
 **Important v0.1 limits:** Imported publications are stored **only in this browser's origin**; clearing site data, using private browsing, changing devices or reinstalling browsers can delete the library. IndexedDB is **not encrypted**, is not an archival backup, and browser storage limits apply. Always keep your original files. MDX is rendered as Markdown, never executed as code. PDF source pages are preserved as pages rather than reflowed. CBR, OCR, DRM circumvention, magazine authoring, actual newspaper folding and cross-device sync are not implemented.
 
+## Human Essentials Field Library (Rung 5)
+
+The app now includes a curated, searchable **Human Essentials** catalog. It is separate from the user's private GhostShelf, so simply browsing the Commons does not create entries or use personal storage.
+
+- **8 original offline Field Guides** on learning, evidence, money basics, digital security, communication, creativity, health foundations, and household preparedness. These are new MIT-licensed PaperGhost documents, not copies of third-party publications. Select "Read offline +" to explicitly import a guide into GhostShelf, then read it through the existing local reader.
+- **12 curated external resources** from OpenStax, Project Gutenberg, CFPB, FTC, and NLM/MedlinePlus. Each opens the publisher's official HTTPS source page in a new tab. The app **does not scrape, republish, fetch automatically, or silently import** content from outside sources.
+- Search and filter by practical category. No remote catalog API, account, tracking, or paywall.
+- To read an external book offline, get the PDF/EPUB from the publisher and manually import it into PaperGhost. The original publisher's rights and the laws of your jurisdiction still apply.
+
+**Rights:** The PaperGhost source license does not override third-party copyrights. OpenStax describes its current textbook license as CC BY-NC-SA and also restricts ingesting content into AI offerings without permission. Project Gutenberg's US copyright status does not automatically apply internationally. Health/finance links are general education, not personalized advice. Internet is needed to open outside sources.
+
 ## CodexOS Reading Desk (Rung 2c)
 
 - Save named bookmarks in PDF, CBZ and EPUB publications. PDF/CBZ marks use 1-based page numbers; EPUB marks use the actual CFI location reported by its rendition.
