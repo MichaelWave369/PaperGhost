@@ -11,6 +11,8 @@ import { PAGE_SKINS } from '../types';
 import { addNote, addReceipt, notesFor, receiptsFor, sourceBlob } from '../lib/db';
 import { friendlyBytes, localDate, naturalCompare } from '../lib/utils';
 import { GhostMark } from './GhostMark';
+import { comicNextPage, comicPreviousPage, comicSpreadPages, comicSpreadStart, PDF_FOLD_REGIONS } from '../lib/readingLayout';
+import type { FoldRegion } from '../lib/readingLayout';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 
@@ -20,34 +22,50 @@ interface ReaderProps {
   onClose: () => void;
 }
 
-function PageControls({ page, total, onPage }: { page: number; total: number; onPage: (page: number) => void }) {
+function PageControls({ page, total, onPage, step = 1, label }: {
+  page: number; total: number; onPage: (page: number) => void; step?: number; label?: string;
+}) {
   return (
     <nav className="page-controls" aria-label="Page navigation">
-      <button type="button" disabled={page <= 1} onClick={() => onPage(page - 1)}>← Previous</button>
-      <span aria-live="polite">Page {page} / {total}</span>
-      <button type="button" disabled={page >= total} onClick={() => onPage(page + 1)}>Next →</button>
+      <button type="button" disabled={page <= 1} onClick={() => onPage(Math.max(1, page - step))}>← Previous</button>
+      <span aria-live="polite">{label || ('Page ' + page + ' / ' + total)}</span>
+      <button type="button" disabled={page + step > total} onClick={() => onPage(page + step)}>Next →</button>
     </nav>
   );
 }
 
-function usePageArrows(page: number, total: number, onPage: (page: number) => void) {
+function usePageArrows(
+  page: number, total: number, onPage: (page: number) => void,
+  step = 1, direction: 'ltr' | 'rtl' = 'ltr'
+) {
   const onPageRef = useRef(onPage);
   onPageRef.current = onPage;
   useEffect(() => {
     const handleKey = (event: KeyboardEvent) => {
       const target = event.target as HTMLElement | null;
       if (event.altKey || event.metaKey || event.ctrlKey || target?.closest('input,textarea,select,button')) return;
-      if (event.key === 'ArrowRight' && page < total) onPageRef.current(page + 1);
-      if (event.key === 'ArrowLeft' && page > 1) onPageRef.current(page - 1);
+      const isNext = event.key === (direction === 'rtl' ? 'ArrowLeft' : 'ArrowRight');
+      const isPrevious = event.key === (direction === 'rtl' ? 'ArrowRight' : 'ArrowLeft');
+      if (isNext && page + step <= total) {
+        event.preventDefault();
+        onPageRef.current(page + step);
+      } else if (isPrevious && page > 1) {
+        event.preventDefault();
+        onPageRef.current(Math.max(1, page - step));
+      }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
-  }, [page, total]);
+  }, [page, total, step, direction]);
 }
 
-function PdfPages({ blob, publication, onPage }: { blob: Blob; publication: Publication; onPage: (page: number) => void }) {
+function PdfPages({ blob, publication, onPage }: {
+  blob: Blob; publication: Publication; onPage: (page: number) => void;
+}) {
   const [pdf, setPdf] = useState<PDFDocumentProxy | null>(null);
   const [error, setError] = useState('');
+  const [fold, setFold] = useState<FoldRegion>('whole');
+  const [canvasSize, setCanvasSize] = useState<{ width: number; height: number } | null>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const wrapRef = useRef<HTMLDivElement>(null);
 
@@ -85,14 +103,17 @@ function PdfPages({ blob, publication, onPage }: { blob: Blob; publication: Publ
         const scaled = page.getViewport({ scale: scale * ratio });
         const canvas = canvasRef.current;
         if (!canvas) return;
+        const width = Math.round(viewport.width * scale);
+        const height = Math.round(viewport.height * scale);
         canvas.width = Math.round(scaled.width);
         canvas.height = Math.round(scaled.height);
-        canvas.style.width = Math.round(viewport.width * scale) + 'px';
-        canvas.style.height = Math.round(viewport.height * scale) + 'px';
+        canvas.style.width = width + 'px';
+        canvas.style.height = height + 'px';
         const context = canvas.getContext('2d');
         if (!context) throw new Error('Canvas rendering is unavailable.');
         renderTask = page.render({ canvasContext: context, viewport: scaled });
         await renderTask.promise;
+        if (!cancelled) setCanvasSize({ width, height });
       } catch (reason) {
         if (!cancelled && !(reason instanceof Error && reason.name === 'RenderingCancelledException')) setError(String(reason));
       }
@@ -101,27 +122,54 @@ function PdfPages({ blob, publication, onPage }: { blob: Blob; publication: Publ
   }, [pdf, publication.page]);
 
   const pageCount = pdf?.numPages || 1;
+  const activeFold = publication.skin === 'newspaper' ? fold : 'whole';
   usePageArrows(publication.page, pageCount, onPage);
   return (
     <div className="document-viewer">
       {error ? <p className="error" role="alert">{error}</p> : null}
       {!pdf && !error ? <p>Unfolding the PDF…</p> : null}
-      <div className="pdf-canvas-wrap" ref={wrapRef}><canvas aria-label={'PDF page ' + publication.page} ref={canvasRef} /></div>
+      {pdf && publication.skin === 'newspaper' ? (
+        <div className="pdf-fold-toolbar">
+          <label htmlFor="newspaper-fold-region">Newspaper fold</label>
+          <select id="newspaper-fold-region" value={fold} onChange={event => setFold(event.target.value as FoldRegion)}>
+            {PDF_FOLD_REGIONS.map(region => <option key={region.value} value={region.value}>{region.label}</option>)}
+          </select>
+          <span>Zoom into a quarter of the original page, without changing the document.</span>
+        </div>
+      ) : null}
+      <div className="pdf-canvas-wrap" ref={wrapRef}>
+        <div
+          className={'pdf-fold-frame fold-' + activeFold}
+          style={canvasSize ? { width: canvasSize.width, height: canvasSize.height } : undefined}
+        >
+          <canvas aria-label={'PDF page ' + publication.page + (activeFold !== 'whole' ? ', ' + activeFold.replace('-', ' ') : '')} ref={canvasRef} />
+        </div>
+      </div>
       {pdf ? <PageControls page={publication.page} total={pageCount} onPage={onPage} /> : null}
     </div>
   );
 }
 
-function ComicPages({ blob, publication, onPage }: { blob: Blob; publication: Publication; onPage: (page: number) => void }) {
+function ComicPages({ blob, publication, onPage, onPreferences }: {
+  blob: Blob;
+  publication: Publication;
+  onPage: (page: number) => void;
+  onPreferences: (changes: Partial<Pick<Publication, 'comicDirection' | 'comicSpread'>>) => void;
+}) {
   const [archive, setArchive] = useState<{ zip: JSZip; entries: string[] } | null>(null);
-  const [imageUrl, setImageUrl] = useState('');
+  const [images, setImages] = useState<{ page: number; url: string }[]>([]);
   const [error, setError] = useState('');
+  const direction = publication.comicDirection ?? 'ltr';
+  const spread = publication.comicSpread ?? false;
+
   useEffect(() => {
     let active = true;
     void (async () => {
       try {
         const zip = await JSZip.loadAsync(await blob.arrayBuffer());
-        const entries = Object.keys(zip.files).filter(name => !zip.files[name].dir && /\.(png|jpe?g|webp|gif|avif)$/i.test(name)).sort(naturalCompare);
+        const entries = Object.keys(zip.files)
+          .filter(name => !zip.files[name].dir && /\.(png|jpe?g|webp|gif|avif)$/i.test(name) && !name.startsWith('__MACOSX/'))
+          .sort(naturalCompare);
         if (!entries.length) throw new Error('This CBZ contains no supported image pages.');
         if (active) setArchive({ zip, entries });
       } catch (reason) { if (active) setError(String(reason)); }
@@ -129,28 +177,64 @@ function ComicPages({ blob, publication, onPage }: { blob: Blob; publication: Pu
     return () => { active = false; };
   }, [blob]);
 
+  const count = archive?.entries.length || 1;
+  const start = comicSpreadStart(publication.page, count, spread);
+  const visiblePages = comicSpreadPages(publication.page, count, spread, direction);
+
   useEffect(() => {
     if (!archive) return;
     let active = true;
-    let url = '';
+    let createdUrls: string[] = [];
+    setImages([]);
+    setError('');
     void (async () => {
-      const entry = archive.zip.file(archive.entries[Math.min(publication.page - 1, archive.entries.length - 1)]);
-      if (!entry) return;
-      const imgBlob = await entry.async('blob');
+      const decoded = await Promise.all(visiblePages.map(async pageNumber => {
+        const entry = archive.zip.file(archive.entries[pageNumber - 1]);
+        if (!entry) throw new Error('Page ' + pageNumber + ' could not be found in the archive.');
+        return { page: pageNumber, blob: await entry.async('blob') };
+      }));
       if (!active) return;
-      url = URL.createObjectURL(imgBlob);
-      setImageUrl(url);
+      const nextImages = decoded.map(item => ({
+        page: item.page, url: URL.createObjectURL(item.blob)
+      }));
+      createdUrls = nextImages.map(item => item.url);
+      setImages(nextImages);
     })().catch(reason => { if (active) setError(String(reason)); });
-    return () => { active = false; if (url) URL.revokeObjectURL(url); setImageUrl(''); };
-  }, [archive, publication.page]);
-  const count = archive?.entries.length || 1;
-  usePageArrows(publication.page, count, onPage);
+    return () => {
+      active = false;
+      createdUrls.forEach(url => URL.revokeObjectURL(url));
+    };
+  }, [archive, publication.page, spread, direction]);
+
+  const step = spread ? 2 : 1;
+  const next = () => onPage(comicNextPage(start, count, spread));
+  const previous = () => onPage(comicPreviousPage(start, count, spread));
+  usePageArrows(start, count, onPage, step, direction);
   return (
     <div className="document-viewer">
+      <div className="comic-reading-toolbar">
+        <label>
+          <input type="checkbox" checked={spread} onChange={event => onPreferences({ comicSpread: event.target.checked })} />
+          Two-page spread
+        </label>
+        <label htmlFor="comic-reading-direction">Reading direction</label>
+        <select id="comic-reading-direction" value={direction} onChange={event => onPreferences({ comicDirection: event.target.value as 'ltr' | 'rtl' })}>
+          <option value="ltr">Left → right</option>
+          <option value="rtl">Right ← left (manga)</option>
+        </select>
+      </div>
       {error ? <p className="error" role="alert">{error}</p> : null}
       {!archive && !error ? <p>Opening the comic archive…</p> : null}
-      {imageUrl ? <img className="comic-page" src={imageUrl} alt={'Comic page ' + publication.page} /> : null}
-      {archive ? <PageControls page={publication.page} total={count} onPage={onPage} /> : null}
+      <div className={'comic-spread' + (spread ? ' two-up' : '')} role="group" aria-label={spread ? 'Two-page comic spread' : 'Comic page'}>
+        {images.map(image => <img key={image.page} className="comic-page" src={image.url} alt={'Comic page ' + image.page} />)}
+      </div>
+      {archive ? (
+        <nav className="page-controls" aria-label="Comic page navigation">
+          <button type="button" disabled={start <= 1} onClick={previous}>← Previous</button>
+          <span aria-live="polite">Page {start}{spread && visiblePages.length === 2 ? '–' + (start + 1) : ''} / {count}</span>
+          <button type="button" disabled={start + step > count} onClick={next}>Next →</button>
+        </nav>
+      ) : null}
     </div>
   );
 }
@@ -185,6 +269,20 @@ function EpubPages({ blob, publication, onLocator }: { blob: Blob; publication: 
   const onLocatorRef = useRef(onLocator);
   onLocatorRef.current = onLocator;
   const [error, setError] = useState('');
+
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (event.altKey || event.metaKey || event.ctrlKey || target?.closest('input,textarea,select,button')) return;
+      if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+        event.preventDefault();
+        if (event.key === 'ArrowRight') void renditionRef.current?.next();
+        else void renditionRef.current?.prev();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -299,7 +397,7 @@ export function Reader({ publication, onChange, onClose }: ReaderProps) {
           {error ? <p className="error" role="alert">{error}</p> : null}
           {!blob && !error ? <p className="loading">Opening your local publication…</p> : null}
           {blob && publication.format === 'pdf' ? <PdfPages blob={blob} publication={publication} onPage={changePage} /> : null}
-          {blob && publication.format === 'cbz' ? <ComicPages blob={blob} publication={publication} onPage={changePage} /> : null}
+          {blob && publication.format === 'cbz' ? <ComicPages blob={blob} publication={publication} onPage={changePage} onPreferences={changes => onChange({ ...publication, ...changes, updatedAt: new Date().toISOString() })} /> : null}
           {blob && publication.format === 'image' ? <ImagePage blob={blob} /> : null}
           {blob && publication.format === 'epub' ? <EpubPages blob={blob} publication={publication} onLocator={changeLocator} /> : null}
           {blob && (publication.format === 'markdown' || publication.format === 'text') ? <TextPages blob={blob} markdown={publication.format === 'markdown'} /> : null}

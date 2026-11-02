@@ -12,6 +12,8 @@ export interface Publication {
   updatedAt: string;
   page: number;
   locator?: string;
+  comicDirection?: 'ltr' | 'rtl';
+  comicSpread?: boolean;
   skin: PageSkin;
 }
 

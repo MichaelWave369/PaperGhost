@@ -21,7 +21,14 @@ Source: PaperGhost / CodexOS Master Design Spec v0.1, July 4, 2026.
 - Restore all entries in one IndexedDB transaction; add clear browser data-loss and unencrypted-backup warnings.
 - Automated archive and manifest validation tests.
 
-## Rung 2b: CodexOS format intelligence
+## Rung 2b: CodexOS reading rituals (this PR)
+
+- Newspaper PDF quarter-sheet fold/zoom positions with whole-page escape hatch. Source geometry preserved.
+- CBZ two-page spreads and persistent manga right-to-left direction controls.
+- Direction-aware comic keyboard paging and EPUB keyboard page turns.
+- Pure reading-order tests, accessible controls, and responsive reader styles.
+
+## Rung 2c: CodexOS format intelligence (future)
 
 - Faithful versus reflow views, EPUB locations/chapters, PDF text overlays.
 - Newspaper fold navigation and native section hierarchy.
