@@ -1,20 +1,28 @@
 import type { InkReceipt, PersonalNote, Publication } from '../types';
+import type { LearningProgress } from './trails';
 
 const DB_NAME = 'paperghost-local';
-const DB_VERSION = 1;
-type StoreName = 'publications' | 'sources' | 'notes' | 'receipts';
+const DB_VERSION = 2;
+type StoreName = 'publications' | 'sources' | 'notes' | 'receipts' | 'learningProgress';
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const request = indexedDB.open(DB_NAME, DB_VERSION);
     request.onupgradeneeded = () => {
       const db = request.result;
-      db.createObjectStore('publications', { keyPath: 'id' });
-      db.createObjectStore('sources', { keyPath: 'id' });
-      const notes = db.createObjectStore('notes', { keyPath: 'id' });
-      notes.createIndex('publicationId', 'publicationId');
-      const receipts = db.createObjectStore('receipts', { keyPath: 'id' });
-      receipts.createIndex('publicationId', 'publicationId');
+      if (!db.objectStoreNames.contains('publications')) db.createObjectStore('publications', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('sources')) db.createObjectStore('sources', { keyPath: 'id' });
+      if (!db.objectStoreNames.contains('notes')) {
+        const notes = db.createObjectStore('notes', { keyPath: 'id' });
+        notes.createIndex('publicationId', 'publicationId');
+      }
+      if (!db.objectStoreNames.contains('receipts')) {
+        const receipts = db.createObjectStore('receipts', { keyPath: 'id' });
+        receipts.createIndex('publicationId', 'publicationId');
+      }
+      if (!db.objectStoreNames.contains('learningProgress')) {
+        db.createObjectStore('learningProgress', { keyPath: 'id' });
+      }
     };
     request.onsuccess = () => resolve(request.result);
     request.onerror = () => reject(request.error);
@@ -82,6 +90,13 @@ export async function sourceBlob(id: string): Promise<Blob> {
   } finally { db.close(); }
 }
 
+export async function allLearningProgress(): Promise<LearningProgress[]> {
+  return getAll<LearningProgress>('learningProgress');
+}
+export async function saveLearningProgress(progress: LearningProgress): Promise<void> {
+  await put('learningProgress', progress);
+}
+
 export async function addNote(note: PersonalNote): Promise<void> { await put('notes', note); }
 export async function addReceipt(receipt: InkReceipt): Promise<void> { await put('receipts', receipt); }
 
@@ -116,18 +131,20 @@ export async function deletePublication(id: string): Promise<void> {
 export async function restoreSnapshot(
   entries: { publication: Publication; source: Blob }[],
   notes: PersonalNote[],
-  receipts: InkReceipt[]
+  receipts: InkReceipt[],
+  learningProgress: LearningProgress[] = []
 ): Promise<void> {
   const db = await openDatabase();
   try {
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(['publications', 'sources', 'notes', 'receipts'], 'readwrite');
+      const tx = db.transaction(['publications', 'sources', 'notes', 'receipts', 'learningProgress'], 'readwrite');
       for (const entry of entries) {
         tx.objectStore('publications').put(entry.publication);
         tx.objectStore('sources').put({ id: entry.publication.id, blob: entry.source });
       }
       for (const note of notes) tx.objectStore('notes').put(note);
       for (const receipt of receipts) tx.objectStore('receipts').put(receipt);
+      for (const progress of learningProgress) tx.objectStore('learningProgress').put(progress);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);

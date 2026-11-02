@@ -1,6 +1,7 @@
 import JSZip from 'jszip';
 import type { InkReceipt, PersonalNote, Publication } from '../types';
-import { allPublications, notesFor, receiptsFor, restoreSnapshot, sourceBlob } from './db';
+import type { LearningProgress } from './trails';
+import { allLearningProgress, allPublications, notesFor, receiptsFor, restoreSnapshot, sourceBlob } from './db';
 
 const BACKUP_KIND = 'paperghost.ghostshelf.backup';
 const BACKUP_VERSION = 1;
@@ -25,6 +26,7 @@ export interface BackupManifest {
   publications: BackupPublication[];
   notes: PersonalNote[];
   receipts: InkReceipt[];
+  learningProgress?: LearningProgress[];
 }
 
 export interface RestoreSummary {
@@ -32,6 +34,7 @@ export interface RestoreSummary {
   skipped: number;
   notes: number;
   receipts: number;
+  learningTrails: number;
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -85,6 +88,15 @@ function validReceipt(value: unknown): value is InkReceipt {
     string(value.at) && string(value.detail) && value.detail.length <= 20000;
 }
 
+function validLearningProgress(value: unknown): value is LearningProgress {
+  if (!record(value) || typeof value.id !== 'string' || !/^[a-z0-9-]{1,80}$/.test(value.id) ||
+      !Array.isArray(value.completedStepIds) || value.completedStepIds.length > 50 ||
+      typeof value.updatedAt !== 'string' || value.updatedAt.length > 64) return false;
+  const steps = value.completedStepIds;
+  return steps.every(step => typeof step === 'string' && /^[a-z0-9-]{1,80}$/.test(step)) &&
+    new Set(steps).size === steps.length;
+}
+
 /** Only accept the versioned schema we actually produce. No executable content is restored. */
 export function validateManifest(raw: unknown): BackupManifest {
   if (!record(raw) || raw.kind !== BACKUP_KIND || raw.version !== BACKUP_VERSION || !string(raw.createdAt)) {
@@ -92,7 +104,8 @@ export function validateManifest(raw: unknown): BackupManifest {
   }
   if (!Array.isArray(raw.publications) || raw.publications.length > MAX_PUBLICATIONS ||
       !Array.isArray(raw.notes) || raw.notes.length > 100000 ||
-      !Array.isArray(raw.receipts) || raw.receipts.length > 100000) {
+      !Array.isArray(raw.receipts) || raw.receipts.length > 100000 ||
+      (raw.learningProgress !== undefined && (!Array.isArray(raw.learningProgress) || raw.learningProgress.length > 1000))) {
     throw new Error('The GhostShelf backup has invalid or excessive record counts.');
   }
   const ids = new Set<string>();
@@ -120,6 +133,14 @@ export function validateManifest(raw: unknown): BackupManifest {
   if (new Set(noteIds).size !== noteIds.length || new Set(receiptIds).size !== receiptIds.length) {
     throw new Error('This backup contains duplicate note or receipt IDs.');
   }
+  const learningProgress = (raw.learningProgress ?? []) as unknown[];
+  const progressIds = new Set<string>();
+  for (const progress of learningProgress) {
+    if (!validLearningProgress(progress) || progressIds.has(progress.id)) {
+      throw new Error('The backup contains invalid or duplicate learning trail progress.');
+    }
+    progressIds.add(progress.id);
+  }
   return raw as unknown as BackupManifest;
 }
 
@@ -132,7 +153,8 @@ export async function sha256(blob: Blob): Promise<string> {
 export async function createBackupArchive(
   publications: { metadata: Publication; source: Blob }[],
   notes: PersonalNote[],
-  receipts: InkReceipt[]
+  receipts: InkReceipt[],
+  learningProgress: LearningProgress[] = []
 ): Promise<Blob> {
   if (publications.length > MAX_PUBLICATIONS) throw new Error('The library exceeds the backup publication limit.');
   const zip = new JSZip();
@@ -147,7 +169,7 @@ export async function createBackupArchive(
   }
   const manifest = validateManifest({
     kind: BACKUP_KIND, version: BACKUP_VERSION,
-    createdAt: new Date().toISOString(), publications: entries, notes, receipts
+    createdAt: new Date().toISOString(), publications: entries, notes, receipts, learningProgress
   });
   zip.file('manifest.json', JSON.stringify(manifest, null, 2));
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 3 } });
@@ -163,7 +185,7 @@ export async function exportShelfBackup(): Promise<Blob> {
     notes.push(...await notesFor(publication.id));
     receipts.push(...await receiptsFor(publication.id));
   }
-  return createBackupArchive(items, notes, receipts);
+  return createBackupArchive(items, notes, receipts, await allLearningProgress());
 }
 
 /** Verifies every file before writing any record. A storage transaction commits all records or none. */
@@ -206,12 +228,19 @@ export async function restoreShelfBackup(archive: Blob): Promise<RestoreSummary>
     }
   }
 
-  // Preserve existing publications and their state; add notes/receipts by ID without rewriting old originals.
-  await restoreSnapshot(sources, manifest.notes, manifest.receipts);
+  // Existing local trail progress wins; a restored archive cannot silently reset it.
+  const existingProgress = await allLearningProgress();
+  const knownProgressIds = new Set(existingProgress.map(progress => progress.id));
+  const incomingProgress = (manifest.learningProgress ?? [])
+    .filter(progress => !knownProgressIds.has(progress.id));
+
+  // Preserve existing publication reading state and restore all new records atomically.
+  await restoreSnapshot(sources, manifest.notes, manifest.receipts, incomingProgress);
   return {
     restored: sources.length,
     skipped: skipped.size,
     notes: manifest.notes.length,
-    receipts: manifest.receipts.length
+    receipts: manifest.receipts.length,
+    learningTrails: incomingProgress.length
   };
 }

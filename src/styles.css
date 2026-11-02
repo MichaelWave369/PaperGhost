@@ -328,3 +328,49 @@ h1 em { color: #d8bf84; font-weight: 400; }
   .commons-search input { flex: unset; width: 100%; }
   .commons-section { padding: 34px 23px 55px; }
 }
+
+/* Learning Trails: purposeful, self-paced progress without streaks or gamification */
+.learning-trails { max-width: 1240px; margin: 40px auto 18px; border-top: 2px solid #243b51; border-bottom: 1px solid #d0c5ae; padding: 36px 0; }
+.learning-trails-header { display: flex; align-items: center; justify-content: space-between; gap: 30px; }
+.learning-trails-header .eyebrow { color: #9c7742; }
+.learning-trails-header h3 { font: 400 clamp(28px, 3.3vw, 40px)/1.25 'Libre Baskerville', Georgia, serif; letter-spacing: -.055em; color: #1b3048; margin: 7px 0 14px; }
+.learning-trails-header p:not(.eyebrow) { max-width: 770px; font-size: 13px; line-height: 1.8; color: #605b51; }
+.trail-seal { font: 72px 'Libre Baskerville', Georgia, serif; color: #b39761; padding: 0 25px; }
+.trail-cards { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 14px; margin-top: 23px; }
+.trail-card { display: flex; flex-direction: column; background: #ece4d5; border: 1px solid #c8bba4; border-left: 4px solid #b39360; padding: 20px; min-width: 0; }
+.trail-card-active { background: #f8f2e8; border-left-color: #234863; }
+.trail-label { color: #806d52; font-size: 9px; font-weight: 700; letter-spacing: .16em; }
+.trail-card h4 { font: 400 19px/1.5 'Libre Baskerville', Georgia, serif; margin: 16px 0 8px; letter-spacing: -.025em; color: #233a52; }
+.trail-card p { font-size: 12px; color: #635f57; line-height: 1.7; flex: 1; }
+.trail-card progress { width: 100%; height: 8px; accent-color: #2e6c67; }
+.trail-card-bottom { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+.trail-card-bottom span { color: #62594d; font-size: 11px; }
+.trail-card-bottom button { padding: 9px 12px; color: #f7efdf; background: #223e56; border: 0; border-radius: 2px; font-weight: 700; font-size: 11px; }
+.trail-card-bottom button:hover { background: #335c77; }
+.trail-detail { margin: 18px 0 0; background: #fcf7ec; border: 1px solid #c4b69f; padding: clamp(18px, 3vw, 32px); }
+.trail-detail-top { display: flex; align-items: start; justify-content: space-between; gap: 18px; }
+.trail-detail-top .eyebrow { color: #947449; }
+.trail-detail-top h4 { font: 400 clamp(24px, 3vw, 34px) 'Libre Baskerville', Georgia, serif; margin: 9px 0 10px; color: #1a334d; }
+.trail-detail-top p:not(.eyebrow) { font-size: 12px; color: #686052; line-height: 1.8; }
+.trail-detail-top > button { border: 1px solid #ad9981; background: transparent; color: #203951; padding: 10px 13px; white-space: nowrap; }
+.trail-step-list { padding: 0; margin: 22px 0 10px; list-style: none; }
+.trail-step-list li { display: grid; grid-template-columns: 45px minmax(0,1fr) auto; align-items: start; gap: 19px; padding: 23px 0; border-top: 1px solid #ddd1be; }
+.trail-step-number { font: italic 24px 'Libre Baskerville', Georgia, serif; color: #b09053; }
+.trail-step-info h5 { font: 400 19px/1.5 'Libre Baskerville', Georgia, serif; margin: 0 0 8px; color: #233a52; }
+.trail-step-info p { color: #5e605c; font-size: 12px; line-height: 1.75; margin-bottom: 17px; }
+.trail-resource-button { background: transparent; color: #1d4d66; padding: 0 0 3px; border: 0; border-bottom: 1px solid #8ba8ad; text-decoration: none; cursor: pointer; font-size: 12px; font-weight: 700; display: inline-block; overflow-wrap: anywhere; text-align: left; }
+.trail-resource-button:disabled { opacity: .5; cursor: not-allowed; }
+.trail-step-check { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; white-space: nowrap; color: #3a5a54; }
+.trail-step-check input { width: 18px; height: 18px; accent-color: #2e6c67; }
+.trail-step-finished .trail-step-number { color: #4e7969; }
+.trail-step-finished .trail-step-info h5 { color: #47705b; }
+.trail-detail-note, .trail-privacy { color: #716c61; font-size: 11px; line-height: 1.8; }
+.trail-privacy { margin: 20px 0 0; }
+@media(max-width: 950px) { .trail-cards { grid-template-columns: repeat(2, minmax(0,1fr)); } }
+@media(max-width: 650px) {
+  .trail-cards { grid-template-columns: 1fr; }
+  .trail-seal { display: none; }
+  .trail-step-list li { grid-template-columns: 30px minmax(0,1fr); gap: 10px; }
+  .trail-step-check { grid-column: 2; }
+  .trail-detail-top { flex-wrap: wrap; }
+}

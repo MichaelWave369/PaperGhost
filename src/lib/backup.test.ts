@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import JSZip from 'jszip';
 import { createBackupArchive, sha256, validateManifest } from './backup';
 import type { Publication } from '../types';
+import type { LearningProgress } from './trails';
 
 async function fixture() {
   const source = new Blob(['Hello PaperGhost'], { type: 'text/plain' });
@@ -62,4 +63,34 @@ describe('GhostShelf portable backup', () => {
     };
     expect(() => validateManifest(base)).toThrow('invalid publication');
   });
+  it('round-trips optional learning progress without changing GhostShelf backup v1', async () => {
+    const { source, metadata } = await fixture();
+    const progress: LearningProgress = {
+      id: 'clear-thinking', completedStepIds: ['question', 'check-evidence'],
+      updatedAt: '2026-11-02T21:30:00.000Z'
+    };
+    const archive = await createBackupArchive([{ metadata, source }], [], [], [progress]);
+    const zip = await JSZip.loadAsync(archive);
+    const manifest = validateManifest(JSON.parse(await zip.file('manifest.json')!.async('string')));
+    expect(manifest.version).toBe(1);
+    expect(manifest.learningProgress).toEqual([progress]);
+    const olderBackup = { ...manifest };
+    delete olderBackup.learningProgress;
+    expect(validateManifest(olderBackup).learningProgress).toBeUndefined();
+  });
+
+  it('rejects malformed or duplicate learning progress records before restoring', async () => {
+    const { metadata } = await fixture();
+    const base = {
+      kind: 'paperghost.ghostshelf.backup', version: 1,
+      createdAt: '2026-11-02T21:30:00Z',
+      publications: [{ metadata, sourcePath: 'sources/' + metadata.id + '.bin' }],
+      notes: [], receipts: []
+    };
+    const progress = { id: 'clear-thinking', completedStepIds: ['question'], updatedAt: '2026-11-02T21:30:00Z' };
+    expect(() => validateManifest({ ...base, learningProgress: [progress] })).not.toThrow();
+    expect(() => validateManifest({ ...base, learningProgress: [progress, progress] })).toThrow('learning trail');
+    expect(() => validateManifest({ ...base, learningProgress: [{ ...progress, completedStepIds: ['../unsafe'] }] })).toThrow('learning trail');
+  });
+
 });
