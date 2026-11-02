@@ -1,0 +1,202 @@
+import JSZip from 'jszip';
+import type { InkReceipt, PersonalNote, Publication } from '../types';
+import { allPublications, notesFor, receiptsFor, restoreSnapshot, sourceBlob } from './db';
+
+const BACKUP_KIND = 'paperghost.ghostshelf.backup';
+const BACKUP_VERSION = 1;
+const MAX_BACKUP_BYTES = 550 * 1024 * 1024;
+const MAX_SOURCE_BYTES = 100 * 1024 * 1024;
+const MAX_RESTORED_TOTAL_BYTES = 500 * 1024 * 1024;
+const MAX_PUBLICATIONS = 1000;
+const FORMATS = new Set(['pdf', 'epub', 'cbz', 'markdown', 'text', 'image']);
+const SKINS = new Set(['book', 'newspaper', 'magazine', 'comic', 'archive']);
+const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
+const SHA256 = /^[a-f0-9]{64}$/i;
+
+export interface BackupPublication {
+  metadata: Publication;
+  sourcePath: string;
+}
+
+export interface BackupManifest {
+  kind: typeof BACKUP_KIND;
+  version: number;
+  createdAt: string;
+  publications: BackupPublication[];
+  notes: PersonalNote[];
+  receipts: InkReceipt[];
+}
+
+export interface RestoreSummary {
+  restored: number;
+  skipped: number;
+  notes: number;
+  receipts: number;
+}
+
+function record(value: unknown): value is Record<string, unknown> {
+  return !!value && typeof value === 'object' && !Array.isArray(value);
+}
+
+function string(value: unknown): value is string {
+  return typeof value === 'string';
+}
+
+function validPublication(value: unknown): value is Publication {
+  if (!record(value)) return false;
+  return UUID.test(String(value.id)) &&
+    string(value.title) && value.title.length <= 400 &&
+    string(value.fileName) && value.fileName.length <= 600 &&
+    FORMATS.has(String(value.format)) &&
+    SKINS.has(String(value.skin)) &&
+    Number.isSafeInteger(value.size) && Number(value.size) > 0 && Number(value.size) <= MAX_SOURCE_BYTES &&
+    SHA256.test(String(value.hash)) &&
+    Number.isSafeInteger(value.page) && Number(value.page) >= 1 &&
+    (value.locator === undefined || (string(value.locator) && value.locator.length < 10000)) &&
+    string(value.importedAt) && string(value.updatedAt);
+}
+
+function validNote(value: unknown): value is PersonalNote {
+  return record(value) && UUID.test(String(value.id)) &&
+    UUID.test(String(value.publicationId)) && string(value.text) &&
+    value.text.length <= 200000 && string(value.createdAt);
+}
+
+function validReceipt(value: unknown): value is InkReceipt {
+  return record(value) && UUID.test(String(value.id)) &&
+    UUID.test(String(value.publicationId)) &&
+    ['import', 'note', 'export'].includes(String(value.kind)) &&
+    SHA256.test(String(value.sourceSha256)) &&
+    string(value.at) && string(value.detail) && value.detail.length <= 20000;
+}
+
+/** Only accept the versioned schema we actually produce. No executable content is restored. */
+export function validateManifest(raw: unknown): BackupManifest {
+  if (!record(raw) || raw.kind !== BACKUP_KIND || raw.version !== BACKUP_VERSION || !string(raw.createdAt)) {
+    throw new Error('This is not a supported PaperGhost GhostShelf v1 backup.');
+  }
+  if (!Array.isArray(raw.publications) || raw.publications.length > MAX_PUBLICATIONS ||
+      !Array.isArray(raw.notes) || raw.notes.length > 100000 ||
+      !Array.isArray(raw.receipts) || raw.receipts.length > 100000) {
+    throw new Error('The GhostShelf backup has invalid or excessive record counts.');
+  }
+  const ids = new Set<string>();
+  let totalBytes = 0;
+  for (const item of raw.publications) {
+    if (!record(item) || !validPublication(item.metadata) || !string(item.sourcePath)) {
+      throw new Error('The GhostShelf backup contains an invalid publication.');
+    }
+    const publication = item.metadata;
+    if (item.sourcePath !== 'sources/' + publication.id + '.bin' || ids.has(publication.id)) {
+      throw new Error('The GhostShelf backup contains a duplicate or unsafe source reference.');
+    }
+    ids.add(publication.id);
+    totalBytes += publication.size;
+    if (totalBytes > MAX_RESTORED_TOTAL_BYTES) throw new Error('This backup exceeds the 500 MB restore limit.');
+  }
+  for (const note of raw.notes) {
+    if (!validNote(note) || !ids.has(note.publicationId)) throw new Error('This backup has invalid or orphaned reading notes.');
+  }
+  for (const receipt of raw.receipts) {
+    if (!validReceipt(receipt) || !ids.has(receipt.publicationId)) throw new Error('This backup has invalid or orphaned InkLedger receipts.');
+  }
+  const noteIds = raw.notes.map(note => note.id as string);
+  const receiptIds = raw.receipts.map(receipt => receipt.id as string);
+  if (new Set(noteIds).size !== noteIds.length || new Set(receiptIds).size !== receiptIds.length) {
+    throw new Error('This backup contains duplicate note or receipt IDs.');
+  }
+  return raw as unknown as BackupManifest;
+}
+
+export async function sha256(blob: Blob): Promise<string> {
+  const digest = await crypto.subtle.digest('SHA-256', await blob.arrayBuffer());
+  return [...new Uint8Array(digest)].map(byte => byte.toString(16).padStart(2, '0')).join('');
+}
+
+/** Pure archive helper also used by tests; no IndexedDB interaction. */
+export async function createBackupArchive(
+  publications: { metadata: Publication; source: Blob }[],
+  notes: PersonalNote[],
+  receipts: InkReceipt[]
+): Promise<Blob> {
+  if (publications.length > MAX_PUBLICATIONS) throw new Error('The library exceeds the backup publication limit.');
+  const zip = new JSZip();
+  const entries: BackupPublication[] = [];
+  for (const { metadata, source } of publications) {
+    if (source.size !== metadata.size || (await sha256(source)) !== metadata.hash) {
+      throw new Error('Source integrity check failed for ' + metadata.title + '. No backup was created.');
+    }
+    const sourcePath = 'sources/' + metadata.id + '.bin';
+    zip.file(sourcePath, new Uint8Array(await source.arrayBuffer()));
+    entries.push({ metadata, sourcePath });
+  }
+  const manifest = validateManifest({
+    kind: BACKUP_KIND, version: BACKUP_VERSION,
+    createdAt: new Date().toISOString(), publications: entries, notes, receipts
+  });
+  zip.file('manifest.json', JSON.stringify(manifest, null, 2));
+  return zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 3 } });
+}
+
+export async function exportShelfBackup(): Promise<Blob> {
+  const publications = await allPublications();
+  const items: { metadata: Publication; source: Blob }[] = [];
+  const notes: PersonalNote[] = [];
+  const receipts: InkReceipt[] = [];
+  for (const publication of publications) {
+    items.push({ metadata: publication, source: await sourceBlob(publication.id) });
+    notes.push(...await notesFor(publication.id));
+    receipts.push(...await receiptsFor(publication.id));
+  }
+  return createBackupArchive(items, notes, receipts);
+}
+
+/** Verifies every file before writing any record. A storage transaction commits all records or none. */
+export async function restoreShelfBackup(archive: Blob): Promise<RestoreSummary> {
+  if (!archive.size || archive.size > MAX_BACKUP_BYTES) {
+    throw new Error('Choose a GhostShelf ZIP backup smaller than 550 MB.');
+  }
+  const zip = await JSZip.loadAsync(archive);
+  if (Object.keys(zip.files).length > MAX_PUBLICATIONS + 20) {
+    throw new Error('The archive contains too many files.');
+  }
+  const manifestFile = zip.file('manifest.json');
+  if (!manifestFile) throw new Error('This ZIP has no PaperGhost manifest.json.');
+  const manifestText = await manifestFile.async('string');
+  if (manifestText.length > 12 * 1024 * 1024) throw new Error('The backup manifest is too large.');
+  let raw: unknown;
+  try { raw = JSON.parse(manifestText); }
+  catch { throw new Error('The backup manifest is invalid JSON.'); }
+  const manifest = validateManifest(raw);
+  const existing = await allPublications();
+  const byId = new Map(existing.map(item => [item.id, item]));
+  const sources: { publication: Publication; source: Blob }[] = [];
+  const skipped = new Set<string>();
+
+  for (const item of manifest.publications) {
+    const saved = byId.get(item.metadata.id);
+    if (saved && saved.hash !== item.metadata.hash) {
+      throw new Error('A different local publication already has this backup ID. No changes were made.');
+    }
+    const entry = zip.file(item.sourcePath);
+    if (!entry) throw new Error('A backed-up source file is missing: ' + item.metadata.title);
+    const data = await entry.async('blob');
+    if (data.size !== item.metadata.size || (await sha256(data)) !== item.metadata.hash) {
+      throw new Error('A backed-up source failed the integrity check: ' + item.metadata.title + '. No changes were made.');
+    }
+    if (saved) {
+      skipped.add(item.metadata.id);
+    } else {
+      sources.push({ publication: item.metadata, source: data });
+    }
+  }
+
+  // Preserve existing publications and their state; add notes/receipts by ID without rewriting old originals.
+  await restoreSnapshot(sources, manifest.notes, manifest.receipts);
+  return {
+    restored: sources.length,
+    skipped: skipped.size,
+    notes: manifest.notes.length,
+    receipts: manifest.receipts.length
+  };
+}

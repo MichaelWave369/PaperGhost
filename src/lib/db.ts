@@ -111,3 +111,26 @@ export async function deletePublication(id: string): Promise<void> {
     });
   } finally { db.close(); }
 }
+
+/** One IndexedDB transaction protects restored sources, metadata, notes and receipts as a unit. */
+export async function restoreSnapshot(
+  entries: { publication: Publication; source: Blob }[],
+  notes: PersonalNote[],
+  receipts: InkReceipt[]
+): Promise<void> {
+  const db = await openDatabase();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction(['publications', 'sources', 'notes', 'receipts'], 'readwrite');
+      for (const entry of entries) {
+        tx.objectStore('publications').put(entry.publication);
+        tx.objectStore('sources').put({ id: entry.publication.id, blob: entry.source });
+      }
+      for (const note of notes) tx.objectStore('notes').put(note);
+      for (const receipt of receipts) tx.objectStore('receipts').put(receipt);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  } finally { db.close(); }
+}
