@@ -18,6 +18,10 @@ Created from the July 4, 2026 *PaperGhost / CodexOS Master Design Spec v0.1*. Th
 
 **Important v0.1 limits:** Imported publications are stored **only in this browser's origin**; clearing site data, using private browsing, changing devices or reinstalling browsers can delete the library. IndexedDB is **not encrypted**, is not an archival backup, and browser storage limits apply. Always keep your original files. MDX is rendered as Markdown, never executed as code. PDF source pages are preserved as pages rather than reflowed. CBR, OCR, DRM circumvention, magazine authoring, actual newspaper folding and cross-device sync are not implemented.
 
+## Portable GhostShelf backups
+
+Use **Backup ZIP** from GhostShelf to download the full local collection: original source bytes, publication metadata, last reading position, personal notes, and InkLedger receipts. Use **Restore ZIP** to merge a backup into another browser. Backup manifests are versioned and source hashes are verified before applying any writes; existing publication IDs are not overwritten. Files stay in your browser unless you explicitly download a backup. **The ZIP is not encrypted** and may contain personal reading notes: store and share it carefully. Backups are limited to 500 MB of uncompressed originals in this early release.
+
 ## Run locally
 
 Requirements: Node.js 22+ and npm.

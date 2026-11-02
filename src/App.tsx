@@ -3,6 +3,7 @@ import type { DragEvent } from 'react';
 import type { Publication } from './types';
 import { allPublications, deletePublication, savePublication } from './lib/db';
 import { importFile } from './lib/imports';
+import { exportShelfBackup, restoreShelfBackup } from './lib/backup';
 import { demoFile } from './lib/demo';
 import { friendlyBytes, localDate } from './lib/utils';
 import { Reader } from './components/Reader';
@@ -25,6 +26,7 @@ function App() {
   const [notice, setNotice] = useState('');
   const [ready, setReady] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
+  const backupInput = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     let active = true;
@@ -58,6 +60,45 @@ function App() {
     } finally {
       setBusy(false);
       if (fileInput.current) fileInput.current.value = '';
+    }
+  };
+
+
+  const downloadBackup = async () => {
+    if (busy || !publications.length) return;
+    setBusy(true);
+    setError('');
+    try {
+      const archive = await exportShelfBackup();
+      const url = URL.createObjectURL(archive);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = 'PaperGhost-GhostShelf-' + new Date().toISOString().slice(0, 10) + '.zip';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      setNotice('GhostShelf backup prepared. Keep the downloaded ZIP somewhere safe; it includes your source files and private notes.');
+    } catch (reason) {
+      setError('GhostShelf backup failed: ' + String(reason));
+    } finally { setBusy(false); }
+  };
+
+  const importBackup = async (file?: File) => {
+    if (!file || busy) return;
+    setBusy(true);
+    setError('');
+    setNotice('');
+    try {
+      const summary = await restoreShelfBackup(file);
+      await refresh();
+      setNotice('Restored ' + summary.restored + ' publications; ' + summary.skipped +
+        ' already on this shelf. Notes and InkLedger receipts were included.');
+    } catch (reason) {
+      setError('Could not restore GhostShelf: ' + String(reason));
+    } finally {
+      setBusy(false);
+      if (backupInput.current) backupInput.current.value = '';
     }
   };
 
@@ -129,8 +170,9 @@ function App() {
               <div className="section-topline"><span>01 / YOUR COLLECTION</span><span>GHOSTSHELF · PRIVATE LIBRARY</span></div>
               <div className="shelf-heading">
                 <div><p className="eyebrow">EVERY PAGE HAS A PLACE</p><h2 id="shelf-title">Your GhostShelf<span className="title-star">✳</span></h2></div>
-                <div className="shelf-tools"><label className="search-label" htmlFor="shelf-search">Search collection</label><input id="shelf-search" type="search" placeholder="Search your shelf…" value={query} onChange={event => setQuery(event.target.value)}/><button className="outline-button small" disabled={busy} onClick={() => fileInput.current?.click()}>+ Import</button></div>
+                <div className="shelf-tools"><label className="search-label" htmlFor="shelf-search">Search collection</label><input id="shelf-search" type="search" placeholder="Search your shelf…" value={query} onChange={event => setQuery(event.target.value)}/><button className="outline-button small" disabled={busy || !publications.length} onClick={() => void downloadBackup()} title="Save your entire local library, including source files and private notes">Backup ZIP</button><button className="outline-button small" disabled={busy} onClick={() => backupInput.current?.click()} title="Restore a PaperGhost GhostShelf backup">Restore ZIP</button><button className="outline-button small" disabled={busy} onClick={() => fileInput.current?.click()}>+ Import</button></div>
               </div>
+              <p className="backup-guidance">Your browser is not a permanent vault. Use <strong>Backup ZIP</strong> to keep a portable copy of originals, notes, and receipts. Backups are not encrypted.</p>
               <div className="shelf-stats"><span>{publications.length} PUBLICATIONS</span><span>{friendlyBytes(totalSize)} STORED LOCALLY</span><span>NO CLOUD REQUIRED</span></div>
               {error ? <div className="message error" role="alert">{error}<button type="button" onClick={() => setError('')} aria-label="Dismiss error">×</button></div> : null}
               {notice ? <div className="message notice" role="status">{notice}<button type="button" onClick={() => setNotice('')} aria-label="Dismiss notice">×</button></div> : null}
@@ -172,6 +214,7 @@ function App() {
           </main>
           <footer className="site-footer"><span>✳ ENTER THE FIELD · PAPERGHOST</span><span>PAPER IS MEMORY. PRESENCE IS REAL.</span><span>MIT OPEN SOURCE · 2026</span></footer>
           {dragging ? <div className="drop-overlay" aria-hidden="true">RELEASE TO ADD TO GHOSTSHELF</div> : null}
+          <input ref={backupInput} className="visually-hidden" type="file" accept=".zip,application/zip" aria-label="Restore GhostShelf ZIP backup" onChange={event => void importBackup(event.target.files?.[0])} />
           <input ref={fileInput} className="visually-hidden" aria-label="Import publication files" type="file" multiple accept=".pdf,.epub,.cbz,.md,.mdx,.markdown,.txt,.jpg,.jpeg,.png,.webp,.gif,.avif" onChange={event => void importFiles(Array.from(event.target.files || []))} />
         </>
       )}

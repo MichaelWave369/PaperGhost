@@ -13,7 +13,15 @@ Source: PaperGhost / CodexOS Master Design Spec v0.1, July 4, 2026.
 - Built-in demo issue for first-run exploration.
 - Keyboard, reduced-motion, and responsive layout support.
 
-## Rung 2: CodexOS format intelligence
+## Rung 2a: GhostShelf portability (this PR)
+
+- Download the library as a portable ZIP with full original sources, reading state, notes, and InkLedger receipts.
+- Verify SHA-256 integrity before exporting and restoring; reject unsupported or unsafe archive manifests.
+- Restore only new publications without replacing existing reading positions.
+- Restore all entries in one IndexedDB transaction; add clear browser data-loss and unencrypted-backup warnings.
+- Automated archive and manifest validation tests.
+
+## Rung 2b: CodexOS format intelligence
 
 - Faithful versus reflow views, EPUB locations/chapters, PDF text overlays.
 - Newspaper fold navigation and native section hierarchy.
