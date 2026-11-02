@@ -259,3 +259,21 @@ h1 em { color: #d8bf84; font-weight: 400; }
   .comic-spread { gap: 3px; }
   .comic-spread.two-up .comic-page { max-width: calc(50% - 2px); }
 }
+
+/* CodexOS Rung 2c: the Reading Desk */
+.page-jump { display: inline-flex; gap: 6px; align-items: center; flex-wrap: wrap; font-size: 11px; }
+.page-jump input {
+  width: 68px; height: 37px; border: 1px solid #b9a98c; border-radius: 2px;
+  padding: 5px 8px; background: #fffaf0; color: #14263f;
+}
+.page-jump button { padding: 10px 12px; }
+.bookmark-creator { border-top: 1px solid #d3c9b7; border-bottom: 1px solid #d3c9b7; padding: 18px 0; }
+.bookmark-creator label { display: block; color: #61594c; font-size: 12px; font-weight: 600; margin-bottom: 8px; }
+.bookmark-creator input { display: block; width: 100%; background: #fffdf7; border: 1px solid #cbbca2; padding: 10px 12px; color: #14263f; }
+.bookmark-creator button:disabled { opacity: .65; }
+.bookmark-entry { border-bottom: 1px solid #d3c9b7; padding: 16px 0; }
+.bookmark-entry strong { display: block; font: 400 14px/1.5 'Libre Baskerville', Georgia, serif; color: #24354a; overflow-wrap: anywhere; }
+.bookmark-entry small { display: block; font-size: 10px; color: #73634d; margin-top: 6px; }
+.bookmark-actions { display: flex; flex-wrap: wrap; gap: 10px; }
+.bookmark-actions button { margin: 10px 0 0; padding: 9px 12px; }
+.bookmark-actions button:last-child { background: transparent; border: 1px solid #a88d79; color: #693e35; }

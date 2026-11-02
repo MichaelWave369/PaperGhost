@@ -42,6 +42,21 @@ function string(value: unknown): value is string {
   return typeof value === 'string';
 }
 
+function validBookmarks(value: unknown): boolean {
+  if (value === undefined) return true;
+  if (!Array.isArray(value) || value.length > 200) return false;
+  const ids = new Set<string>();
+  for (const mark of value) {
+    if (!record(mark) || !UUID.test(String(mark.id)) || ids.has(String(mark.id)) ||
+      typeof mark.page !== 'number' || !Number.isSafeInteger(mark.page) || mark.page < 1 ||
+      !string(mark.label) || !mark.label.trim() || mark.label.length > 100 ||
+      !string(mark.createdAt) ||
+      (mark.locator !== undefined && (!string(mark.locator) || mark.locator.length > 10000))) return false;
+    ids.add(mark.id as string);
+  }
+  return true;
+}
+
 function validPublication(value: unknown): value is Publication {
   if (!record(value)) return false;
   return UUID.test(String(value.id)) &&
@@ -50,7 +65,7 @@ function validPublication(value: unknown): value is Publication {
     FORMATS.has(String(value.format)) &&
     SKINS.has(String(value.skin)) &&
     typeof value.size === 'number' && Number.isSafeInteger(value.size) && value.size > 0 && value.size <= MAX_SOURCE_BYTES &&
-    SHA256.test(String(value.hash)) &&
+    SHA256.test(String(value.hash)) && validBookmarks(value.bookmarks) &&
     typeof value.page === 'number' && Number.isSafeInteger(value.page) && value.page >= 1 &&
     (value.locator === undefined || (string(value.locator) && value.locator.length < 10000)) &&
     string(value.importedAt) && string(value.updatedAt);

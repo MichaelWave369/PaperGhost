@@ -1,6 +1,14 @@
 export type PublicationFormat = 'pdf' | 'epub' | 'cbz' | 'markdown' | 'text' | 'image';
 export type PageSkin = 'book' | 'newspaper' | 'magazine' | 'comic' | 'archive';
 
+export interface ReadingBookmark {
+  id: string;
+  page: number;
+  locator?: string;
+  label: string;
+  createdAt: string;
+}
+
 export interface Publication {
   id: string;
   title: string;
@@ -14,6 +22,7 @@ export interface Publication {
   locator?: string;
   comicDirection?: 'ltr' | 'rtl';
   comicSpread?: boolean;
+  bookmarks?: ReadingBookmark[];
   skin: PageSkin;
 }
 

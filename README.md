@@ -18,6 +18,14 @@ Created from the July 4, 2026 *PaperGhost / CodexOS Master Design Spec v0.1*. Th
 
 **Important v0.1 limits:** Imported publications are stored **only in this browser's origin**; clearing site data, using private browsing, changing devices or reinstalling browsers can delete the library. IndexedDB is **not encrypted**, is not an archival backup, and browser storage limits apply. Always keep your original files. MDX is rendered as Markdown, never executed as code. PDF source pages are preserved as pages rather than reflowed. CBR, OCR, DRM circumvention, magazine authoring, actual newspaper folding and cross-device sync are not implemented.
 
+## CodexOS Reading Desk (Rung 2c)
+
+- Save named bookmarks in PDF, CBZ and EPUB publications. PDF/CBZ marks use 1-based page numbers; EPUB marks use the actual CFI location reported by its rendition.
+- Open or remove bookmarks from the reader's Bookmarks rail. These are saved in publication metadata in GhostShelf, not in original source files.
+- Use a Go-to-page input in PDF and CBZ readers. Existing page buttons and manga directional navigation remain.
+- Bookmarks are included in the same GhostShelf v1 ZIP backup format (no breaking export migration). Older backup files with no bookmarks remain readable. Manifest validation rejects invalid bookmark metadata.
+- Plain text/Markdown bookmarks are deferred until those formats have reliable scroll anchors, rather than pretending to save a location.
+
 ## CodexOS reading rituals (Rung 2b)
 
 - **Newspaper Mode with PDF:** choose Whole sheet, Upper left/right, or Lower left/right. Quarter-page folding enlarges the original page image without modifying source bytes. It is a visual crop, not OCR or article recognition.

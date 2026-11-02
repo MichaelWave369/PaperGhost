@@ -53,4 +53,13 @@ describe('GhostShelf portable backup', () => {
       ...base, notes: [{ id: metadata.id, publicationId: crypto.randomUUID(), text: 'orphan', createdAt: '' }]
     })).toThrow('orphaned');
   });
+  it('rejects malicious or invalid bookmark metadata during restore validation', async () => {
+    const { metadata } = await fixture();
+    const base = {
+      kind: 'paperghost.ghostshelf.backup', version: 1, createdAt: '2026-11-02T12:00:00Z',
+      publications: [{ metadata: { ...metadata, bookmarks: [{ id: 'unsafe', page: -2, label: '', createdAt: '' }] }, sourcePath: 'sources/' + metadata.id + '.bin' }],
+      notes: [], receipts: []
+    };
+    expect(() => validateManifest(base)).toThrow('invalid publication');
+  });
 });

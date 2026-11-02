@@ -11,6 +11,7 @@ import { PAGE_SKINS } from '../types';
 import { addNote, addReceipt, notesFor, receiptsFor, sourceBlob } from '../lib/db';
 import { friendlyBytes, localDate, naturalCompare } from '../lib/utils';
 import { GhostMark } from './GhostMark';
+import { addBookmark, bookmarkMatches, bookmarkTarget, canBookmark, removeBookmark } from '../lib/bookmarks';
 import { comicNextPage, comicPreviousPage, comicSpreadPages, comicSpreadStart, PDF_FOLD_REGIONS } from '../lib/readingLayout';
 import type { FoldRegion } from '../lib/readingLayout';
 
@@ -22,6 +23,22 @@ interface ReaderProps {
   onClose: () => void;
 }
 
+function PageJump({ page, total, onPage }: { page: number; total: number; onPage: (page: number) => void }) {
+  const [target, setTarget] = useState(String(page));
+  useEffect(() => { setTarget(String(page)); }, [page]);
+  return (
+    <form className="page-jump" onSubmit={event => {
+      event.preventDefault();
+      const next = Number(target);
+      if (Number.isSafeInteger(next) && next >= 1 && next <= total) onPage(next);
+    }}>
+      <label htmlFor="reading-jump-page">Go to page</label>
+      <input id="reading-jump-page" aria-label="Page number" type="number" min={1} max={total} value={target} onChange={event => setTarget(event.target.value)} />
+      <button type="submit" disabled={!target || !Number.isSafeInteger(Number(target)) || Number(target) < 1 || Number(target) > total}>Go</button>
+    </form>
+  );
+}
+
 function PageControls({ page, total, onPage, step = 1, label }: {
   page: number; total: number; onPage: (page: number) => void; step?: number; label?: string;
 }) {
@@ -29,6 +46,7 @@ function PageControls({ page, total, onPage, step = 1, label }: {
     <nav className="page-controls" aria-label="Page navigation">
       <button type="button" disabled={page <= 1} onClick={() => onPage(Math.max(1, page - step))}>← Previous</button>
       <span aria-live="polite">{label || ('Page ' + page + ' / ' + total)}</span>
+      <PageJump page={page} total={total} onPage={onPage} />
       <button type="button" disabled={page + step > total} onClick={() => onPage(page + step)}>Next →</button>
     </nav>
   );
@@ -232,6 +250,7 @@ function ComicPages({ blob, publication, onPage, onPreferences }: {
         <nav className="page-controls" aria-label="Comic page navigation">
           <button type="button" disabled={start <= 1} onClick={previous}>← Previous</button>
           <span aria-live="polite">Page {start}{spread && visiblePages.length === 2 ? '–' + (start + 1) : ''} / {count}</span>
+          <PageJump page={start} total={count} onPage={onPage} />
           <button type="button" disabled={start + step > count} onClick={next}>Next →</button>
         </nav>
       ) : null}
@@ -266,6 +285,9 @@ function TextPages({ blob, markdown }: { blob: Blob; markdown: boolean }) {
 function EpubPages({ blob, publication, onLocator }: { blob: Blob; publication: Publication; onLocator: (locator: string) => void }) {
   const elementRef = useRef<HTMLDivElement>(null);
   const renditionRef = useRef<any>(null);
+  const renderedLocatorRef = useRef<string | undefined>(undefined);
+  const desiredLocatorRef = useRef(publication.locator);
+  desiredLocatorRef.current = publication.locator;
   const onLocatorRef = useRef(onLocator);
   onLocatorRef.current = onLocator;
   const [error, setError] = useState('');
@@ -296,9 +318,9 @@ function EpubPages({ blob, publication, onLocator }: { blob: Blob; publication: 
         renditionRef.current = rendition;
         rendition.on('relocated', (location: any) => {
           const locator = location?.start?.cfi;
-          if (active && locator) onLocatorRef.current(locator);
+          if (active && locator) { renderedLocatorRef.current = locator; onLocatorRef.current(locator); }
         });
-        await rendition.display(publication.locator || undefined);
+        await rendition.display(desiredLocatorRef.current || undefined);
       } catch (reason) {
         if (active) setError(String(reason));
       }
@@ -309,6 +331,17 @@ function EpubPages({ blob, publication, onLocator }: { blob: Blob; publication: 
       if (book) book.destroy();
     };
   }, [blob, publication.id]);
+
+  // External bookmark jumps move the active rendition without remounting the EPUB.
+  useEffect(() => {
+    const requested = publication.locator;
+    const rendition = renditionRef.current;
+    if (!requested || !rendition || requested === renderedLocatorRef.current) return;
+    renderedLocatorRef.current = requested;
+    void Promise.resolve(rendition.display(requested)).catch((reason: unknown) => {
+      setError('Could not open this saved EPUB location: ' + String(reason));
+    });
+  }, [publication.locator]);
 
   return (
     <div className="epub-reader">
@@ -328,6 +361,8 @@ export function Reader({ publication, onChange, onClose }: ReaderProps) {
   const [error, setError] = useState('');
   const [showNotes, setShowNotes] = useState(false);
   const [showLedger, setShowLedger] = useState(false);
+  const [showBookmarks, setShowBookmarks] = useState(false);
+  const [bookmarkLabel, setBookmarkLabel] = useState('');
   const [notes, setNotes] = useState<PersonalNote[]>([]);
   const [receipts, setReceipts] = useState<InkReceipt[]>([]);
   const [draft, setDraft] = useState('');
@@ -345,6 +380,24 @@ export function Reader({ publication, onChange, onClose }: ReaderProps) {
     if (locator !== publication.locator) onChange({ ...publication, locator, updatedAt: new Date().toISOString() });
   };
   const changeSkin = (skin: PageSkin) => onChange({ ...publication, skin, updatedAt: new Date().toISOString() });
+
+  const savedBookmarks = publication.bookmarks ?? [];
+  const bookmarkable = canBookmark(publication);
+  const alreadyBookmarked = savedBookmarks.some(mark => bookmarkMatches(publication, mark));
+  const saveBookmark = () => {
+    if (!bookmarkable || alreadyBookmarked) return;
+    const now = new Date().toISOString();
+    const marks = addBookmark(publication, { id: crypto.randomUUID(), createdAt: now, label: bookmarkLabel });
+    onChange({ ...publication, bookmarks: marks, updatedAt: now });
+    setBookmarkLabel('');
+  };
+  const jumpBookmark = (mark: NonNullable<Publication['bookmarks']>[number]) => {
+    const target = bookmarkTarget(publication, mark);
+    onChange({ ...publication, ...target, updatedAt: new Date().toISOString() });
+  };
+  const deleteBookmark = (id: string) => {
+    onChange({ ...publication, bookmarks: removeBookmark(publication, id), updatedAt: new Date().toISOString() });
+  };
 
   const saveNote = async () => {
     if (!draft.trim()) return;
@@ -387,8 +440,9 @@ export function Reader({ publication, onChange, onClose }: ReaderProps) {
               {PAGE_SKINS.map(skin => <option key={skin} value={skin}>{skin[0].toUpperCase() + skin.slice(1)}</option>)}
             </select>
           </label>
-          <button type="button" onClick={() => { setShowNotes(value => !value); setShowLedger(false); }} aria-pressed={showNotes}>Notes ({notes.length})</button>
-          <button type="button" onClick={() => { setShowLedger(value => !value); setShowNotes(false); }} aria-pressed={showLedger}>InkLedger</button>
+          <button type="button" onClick={() => { setShowBookmarks(value => !value); setShowNotes(false); setShowLedger(false); }} aria-pressed={showBookmarks}>Bookmarks ({savedBookmarks.length})</button>
+          <button type="button" onClick={() => { setShowNotes(value => !value); setShowLedger(false); setShowBookmarks(false); }} aria-pressed={showNotes}>Notes ({notes.length})</button>
+          <button type="button" onClick={() => { setShowLedger(value => !value); setShowNotes(false); setShowBookmarks(false); }} aria-pressed={showLedger}>InkLedger</button>
         </div>
       </header>
       <div className="reader-content">
@@ -402,6 +456,34 @@ export function Reader({ publication, onChange, onClose }: ReaderProps) {
           {blob && publication.format === 'epub' ? <EpubPages blob={blob} publication={publication} onLocator={changeLocator} /> : null}
           {blob && (publication.format === 'markdown' || publication.format === 'text') ? <TextPages blob={blob} markdown={publication.format === 'markdown'} /> : null}
         </main>
+        {showBookmarks ? (
+          <aside className="reader-sidebar" aria-label="Reading bookmarks">
+            <h2>Reading bookmarks</h2>
+            <p>Return to your favorite pages without changing the original document.</p>
+            {bookmarkable ? (
+              <div className="bookmark-creator">
+                <label htmlFor="bookmark-name">Bookmark label (optional)</label>
+                <input id="bookmark-name" maxLength={100} placeholder={publication.format === 'epub' ? 'EPUB reading location' : 'Page ' + publication.page} value={bookmarkLabel} onChange={event => setBookmarkLabel(event.target.value)} />
+                <button type="button" disabled={alreadyBookmarked || savedBookmarks.length >= 200} onClick={saveBookmark}>
+                  {alreadyBookmarked ? 'Page already saved' : 'Save this location'}
+                </button>
+              </div>
+            ) : <p className="sidebar-empty">Bookmarks currently support PDF, CBZ and EPUB reading locations. EPUB locations become available after the book opens.</p>}
+            {!savedBookmarks.length ? <p className="sidebar-empty">No saved locations yet.</p> : null}
+            {savedBookmarks.map(mark => (
+              <div className="bookmark-entry" key={mark.id}>
+                <div>
+                  <strong>{mark.label}</strong>
+                  <small>{publication.format === 'epub' ? 'EPUB location' : 'Page ' + mark.page} · {localDate(mark.createdAt)}</small>
+                </div>
+                <div className="bookmark-actions">
+                  <button type="button" onClick={() => jumpBookmark(mark)} aria-label={'Go to ' + mark.label}>Open</button>
+                  <button type="button" onClick={() => deleteBookmark(mark.id)} aria-label={'Remove bookmark ' + mark.label}>Remove</button>
+                </div>
+              </div>
+            ))}
+          </aside>
+        ) : null}
         {showNotes ? (
           <aside className="reader-sidebar" aria-label="Personal notes">
             <h2>Margin notes</h2>

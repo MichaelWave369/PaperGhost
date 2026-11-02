@@ -28,7 +28,14 @@ Source: PaperGhost / CodexOS Master Design Spec v0.1, July 4, 2026.
 - Direction-aware comic keyboard paging and EPUB keyboard page turns.
 - Pure reading-order tests, accessible controls, and responsive reader styles.
 
-## Rung 2c: CodexOS format intelligence (future)
+## Rung 2c: CodexOS Reading Desk (this PR)
+
+- Persistent per-publication named reading bookmarks for PDF, CBZ and EPUB.
+- EPUB bookmark navigation via CFI without reloading the publication.
+- Numeric page jumps for PDF and comic archives.
+- Backward-compatible GhostShelf ZIP bookmark export/restore, input validation and pure logic tests.
+
+## Rung 2d: CodexOS format intelligence (future)
 
 - Faithful versus reflow views, EPUB locations/chapters, PDF text overlays.
 - Newspaper fold navigation and native section hierarchy.
