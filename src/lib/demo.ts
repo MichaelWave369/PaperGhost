@@ -1,0 +1,40 @@
+export const ISSUE_ZERO = [
+  '# ENTER THE FIELD',
+  '',
+  '## ISSUE 000 | The Ghost Returns',
+  '',
+  '> Screens gave us access. Paper gave us presence. PaperGhost gives us both.',
+  '',
+  'Welcome to the first paper vessel. This issue is a built-in demonstration, not a news feed, a subscription, or a cloud download.',
+  '',
+  '---',
+  '',
+  '## From the Pressroom',
+  '',
+  'A good newspaper has a front page. A magazine has a cover. A comic has a rhythm. A book has room to breathe.',
+  '',
+  'PaperGhost is built around a simple idea: a digital publication should still feel like the *thing* it is.',
+  '',
+  'Our reader keeps the original source safe, stores your personal notes separately, and records imports in InkLedger.',
+  '',
+  '### This issue contains',
+  '',
+  '- **CodexOS:** the interpretation layer underneath digital paper.',
+  '- **GhostShelf:** a local library that belongs to its reader.',
+  '- **PageSkin:** a deliberate reading atmosphere.',
+  '- **InkLedger:** receipts that explain where an issue came from.',
+  '',
+  '## A Note from the Workshop',
+  '',
+  'Building outward and circling back is sometimes how the pieces find each other. A publishing vessel becomes more useful as an ecosystem grows around it.',
+  '',
+  'This is Issue Zero. Its purpose is to prove that the first page can open.',
+  '',
+  '---',
+  '',
+  '*Paper is memory. Presence is real. PaperGhost is both.*'
+].join('\n');
+
+export function demoFile(): File {
+  return new File([ISSUE_ZERO], 'Enter-the-Field-Issue-000.md', { type: 'text/markdown' });
+}
