@@ -49,9 +49,9 @@ function validPublication(value: unknown): value is Publication {
     string(value.fileName) && value.fileName.length <= 600 &&
     FORMATS.has(String(value.format)) &&
     SKINS.has(String(value.skin)) &&
-    Number.isSafeInteger(value.size) && Number(value.size) > 0 && Number(value.size) <= MAX_SOURCE_BYTES &&
+    typeof value.size === 'number' && Number.isSafeInteger(value.size) && value.size > 0 && value.size <= MAX_SOURCE_BYTES &&
     SHA256.test(String(value.hash)) &&
-    Number.isSafeInteger(value.page) && Number(value.page) >= 1 &&
+    typeof value.page === 'number' && Number.isSafeInteger(value.page) && value.page >= 1 &&
     (value.locator === undefined || (string(value.locator) && value.locator.length < 10000)) &&
     string(value.importedAt) && string(value.updatedAt);
 }
