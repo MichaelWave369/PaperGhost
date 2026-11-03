@@ -1,9 +1,12 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import { OfflineEssentialsPack } from './OfflineEssentialsPack';
+import { getGuidePackItems, installedGuidePublicationIds } from '../lib/guidePack';
+import type { GuidePackItem } from '../lib/guidePack';
 import { LearningTrails } from './LearningTrails';
 import { WorksheetWorkbench } from './WorksheetWorkbench';
 import type { Publication } from '../types';
 import {
-  COMMONS_CATEGORIES, COMMONS_RESOURCES, filterCommons, guideFileName
+  COMMONS_CATEGORIES, COMMONS_RESOURCES, filterCommons
 } from '../lib/commons';
 import type { CommonsCategory, OfflineGuide } from '../lib/commons';
 
@@ -12,13 +15,28 @@ interface CommonsLibraryProps {
   busy: boolean;
   onAddGuide: (guide: OfflineGuide) => void;
   onOpenPublication: (id: string) => void;
+  onAddAllGuides: () => void;
+  onDownloadPack: () => void;
+  packMessage: string;
+  packError: string;
 }
 
-export function CommonsLibrary({ publications, busy, onAddGuide, onOpenPublication }: CommonsLibraryProps) {
+export function CommonsLibrary({ publications, busy, onAddGuide, onOpenPublication, onAddAllGuides, onDownloadPack, packMessage, packError }: CommonsLibraryProps) {
   const [category, setCategory] = useState<CommonsCategory | 'All'>('All');
   const [query, setQuery] = useState('');
   const filtered = filterCommons(query, category);
-  const owned = new Map(publications.map(publication => [publication.fileName, publication.id]));
+  const [guideItems, setGuideItems] = useState<GuidePackItem[] | null>(null);
+  const [verificationError, setVerificationError] = useState('');
+  useEffect(() => {
+    let active = true;
+    void getGuidePackItems().then(items => {
+      if (active) setGuideItems(items);
+    }).catch(reason => {
+      if (active) setVerificationError('Could not verify the offline guides: ' + String(reason));
+    });
+    return () => { active = false; };
+  }, []);
+  const ownedGuideIds = installedGuidePublicationIds(publications, guideItems ?? []);
 
   return (
     <section id="commons-library" className="commons-section" aria-labelledby="commons-title">
@@ -42,7 +60,16 @@ export function CommonsLibrary({ publications, busy, onAddGuide, onOpenPublicati
         <p><strong>Original Field Guides:</strong> select <em>Read offline</em> to add a full guide to your private GhostShelf. It remains readable in PaperGhost without internet after import.</p>
         <p><strong>Free outside resources:</strong> open the actual publisher's page. Download an EPUB or PDF from there and import it into GhostShelf if you want an offline copy. Their licenses and restrictions remain theirs.</p>
       </div>
-      <LearningTrails publications={publications} busy={busy} onAddGuide={onAddGuide} onOpenPublication={onOpenPublication} />
+      <OfflineEssentialsPack
+        publications={publications}
+        items={guideItems}
+        busy={busy}
+        error={packError || verificationError}
+        message={packMessage}
+        onAddAll={onAddAllGuides}
+        onDownload={onDownloadPack}
+      />
+      <LearningTrails guidePublicationIds={ownedGuideIds} busy={busy} onAddGuide={onAddGuide} onOpenPublication={onOpenPublication} />
       <WorksheetWorkbench />
       <div className="commons-controls">
         <div className="commons-categories" role="group" aria-label="Library topics">
@@ -60,7 +87,7 @@ export function CommonsLibrary({ publications, busy, onAddGuide, onOpenPublicati
       {filtered.length ? (
         <div className="commons-grid">
           {filtered.map(resource => {
-            const importedId = resource.kind === 'guide' ? owned.get(guideFileName(resource.id)) : undefined;
+            const importedId = resource.kind === 'guide' ? ownedGuideIds.get(resource.id) : undefined;
             return (
               <article className={'commons-card' + (resource.kind === 'guide' ? ' commons-guide' : '')} key={resource.id}>
                 <div className="commons-card-meta">

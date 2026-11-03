@@ -1,7 +1,5 @@
 import { useEffect, useState } from 'react';
-import type { Publication } from '../types';
 import type { OfflineGuide } from '../lib/commons';
-import { guideFileName } from '../lib/commons';
 import { changeTrailReflection, exportTrailJournal, hasTrailReflections, MAX_REFLECTION_LENGTH } from '../lib/journal';
 import { allLearningProgress, saveLearningProgress } from '../lib/db';
 import type { LearningProgress, LearningTrail } from '../lib/trails';
@@ -10,7 +8,7 @@ import {
 } from '../lib/trails';
 
 interface LearningTrailsProps {
-  publications: Publication[];
+  guidePublicationIds: ReadonlyMap<string, string>;
   busy: boolean;
   onAddGuide: (guide: OfflineGuide) => void;
   onOpenPublication: (id: string) => void;
@@ -46,13 +44,12 @@ function StepJournal({ stepId, initialText, saving, onSave }: {
   );
 }
 
-export function LearningTrails({ publications, busy, onAddGuide, onOpenPublication }: LearningTrailsProps) {
+export function LearningTrails({ guidePublicationIds, busy, onAddGuide, onOpenPublication }: LearningTrailsProps) {
   const [progress, setProgress] = useState<Record<string, LearningProgress>>({});
   const [activeTrail, setActiveTrail] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
-  const owned = new Map(publications.map(publication => [publication.fileName, publication.id]));
 
   useEffect(() => {
     let active = true;
@@ -164,7 +161,7 @@ export function LearningTrails({ publications, busy, onAddGuide, onOpenPublicati
             {selected.steps.map((step, index) => {
               const finished = (progress[selected.id]?.completedStepIds ?? []).includes(step.id);
               const resource = resourceForStep(step);
-              const importedId = resource?.kind === 'guide' ? owned.get(guideFileName(resource.id)) : undefined;
+              const importedId = resource?.kind === 'guide' ? guidePublicationIds.get(resource.id) : undefined;
               return (
                 <li key={step.id} className={finished ? 'trail-step-finished' : ''}>
                   <span className="trail-step-number">{String(index + 1).padStart(2, '0')}</span>
