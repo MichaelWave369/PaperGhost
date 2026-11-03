@@ -18,6 +18,14 @@ Created from the July 4, 2026 *PaperGhost / CodexOS Master Design Spec v0.1*. Th
 
 **Important v0.1 limits:** Imported publications are stored **only in this browser's origin**; clearing site data, using private browsing, changing devices or reinstalling browsers can delete the library. IndexedDB is **not encrypted**, is not an archival backup, and browser storage limits apply. Always keep your original files. MDX is rendered as Markdown, never executed as code. PDF source pages are preserved as pages rather than reflowed. CBR, OCR, DRM circumvention, magazine authoring, actual newspaper folding and cross-device sync are not implemented.
 
+## Human Essentials Learning Trails (Rung 6)
+
+Six optional, self-paced learning paths put the existing free Commons resources to practical use. The paths cover learning, personal finance, digital safety, communication, making things, and everyday wellbeing. Each offers three real-life exercises with an explicit link to its relevant Field Guide or publisher's page.
+
+A person can manually mark an activity as tried. This is **self-reported progress**, not a test score, a verified skill certification, a reading tracker, a streak, or a behavioral profile. Learning progress is stored exclusively in the browser's IndexedDB. The database moves from version 1 to **version 2** with a non-destructive upgrade; original GhostShelf source blobs remain untouched.
+
+**Portable progress:** GhostShelf ZIP backups remain **manifest version 1** for backward compatibility. New exports include an optional `learningProgress` collection. Old backup files still restore; progress from the local browser wins if the same trail exists in both places. The same atomic restore transaction handles sources, notes, receipts and newly imported learning-progress records. You can export a backup even when GhostShelf has no imported books.
+
 ## Human Essentials Field Library (Rung 5)
 
 The app now includes a curated, searchable **Human Essentials** catalog. It is separate from the user's private GhostShelf, so simply browsing the Commons does not create entries or use personal storage.

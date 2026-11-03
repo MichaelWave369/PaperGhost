@@ -52,6 +52,14 @@ Source: PaperGhost / CodexOS Master Design Spec v0.1, July 4, 2026.
 - Free-text search, category filters, mobile-friendly and keyboard-accessible cards.
 - Tests for catalog IDs, coverage, source hostname allowlist, and offline guide content.
 
+## Rung 2f: Human Essentials learning trails (this PR)
+
+- Six optional self-paced trails, each linking three small practical activities to existing Commons resources.
+- Explicit self-reported checkboxes and per-trail progress indicators, never automatic reading or activity tracking.
+- Local IndexedDB version 2 migration from existing GhostShelf data; keep all original sources and notes intact.
+- Optional learning progress entries in backward-compatible GhostShelf ZIP v1 manifests, with strict validation and atomic restore.
+- Accessible, responsive learning path controls; tests for source references, progress logic, backup roundtrip and DB migration.
+
 ## Rung 3: Enter the Field Pressroom
 
 - Editor templates, layout blocks, cover creator, issue manifest.

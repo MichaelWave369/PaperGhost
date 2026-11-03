@@ -68,7 +68,7 @@ function App() {
 
 
   const downloadBackup = async () => {
-    if (busy || !publications.length) return;
+    if (busy) return;
     setBusy(true);
     setError('');
     try {
@@ -96,7 +96,7 @@ function App() {
       const summary = await restoreShelfBackup(file);
       await refresh();
       setNotice('Restored ' + summary.restored + ' publications; ' + summary.skipped +
-        ' already on this shelf. Notes and InkLedger receipts were included.');
+        ' already on this shelf. Notes, InkLedger receipts, and ' + summary.learningTrails + ' new learning trails were included.');
     } catch (reason) {
       setError('Could not restore GhostShelf: ' + String(reason));
     } finally {
@@ -192,7 +192,7 @@ function App() {
               <div className="section-topline"><span>01 / YOUR COLLECTION</span><span>GHOSTSHELF · PRIVATE LIBRARY</span></div>
               <div className="shelf-heading">
                 <div><p className="eyebrow">EVERY PAGE HAS A PLACE</p><h2 id="shelf-title">Your GhostShelf<span className="title-star">✳</span></h2></div>
-                <div className="shelf-tools"><label className="search-label" htmlFor="shelf-search">Search collection</label><input id="shelf-search" type="search" placeholder="Search your shelf…" value={query} onChange={event => setQuery(event.target.value)}/><button className="outline-button small" disabled={busy || !publications.length} onClick={() => void downloadBackup()} title="Save your entire local library, including source files and private notes">Backup ZIP</button><button className="outline-button small" disabled={busy} onClick={() => backupInput.current?.click()} title="Restore a PaperGhost GhostShelf backup">Restore ZIP</button><button className="outline-button small" disabled={busy} onClick={() => fileInput.current?.click()}>+ Import</button></div>
+                <div className="shelf-tools"><label className="search-label" htmlFor="shelf-search">Search collection</label><input id="shelf-search" type="search" placeholder="Search your shelf…" value={query} onChange={event => setQuery(event.target.value)}/><button className="outline-button small" disabled={busy} onClick={() => void downloadBackup()} title="Save your entire local library, including source files and private notes">Backup ZIP</button><button className="outline-button small" disabled={busy} onClick={() => backupInput.current?.click()} title="Restore a PaperGhost GhostShelf backup">Restore ZIP</button><button className="outline-button small" disabled={busy} onClick={() => fileInput.current?.click()}>+ Import</button></div>
               </div>
               <p className="backup-guidance">Your browser is not a permanent vault. Use <strong>Backup ZIP</strong> to keep a portable copy of originals, notes, and receipts. Backups are not encrypted.</p>
               <div className="shelf-stats"><span>{publications.length} PUBLICATIONS</span><span>{friendlyBytes(totalSize)} STORED LOCALLY</span><span>NO CLOUD REQUIRED</span></div>
