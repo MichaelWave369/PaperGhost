@@ -95,6 +95,7 @@ function App() {
     try {
       const summary = await restoreShelfBackup(file);
       await refresh();
+      window.dispatchEvent(new Event('paperghost:restore'));
       setNotice('Restored ' + summary.restored + ' publications; ' + summary.skipped +
         ' already on this shelf. Notes, InkLedger receipts, and ' + summary.learningTrails + ' new learning trails were included.');
     } catch (reason) {

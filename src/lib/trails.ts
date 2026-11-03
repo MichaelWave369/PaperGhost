@@ -19,6 +19,8 @@ export interface LearningProgress {
   id: string;
   completedStepIds: string[];
   updatedAt: string;
+  /** Optional free-text reflections keyed by step ID. Never published automatically. */
+  reflections?: Record<string, string>;
 }
 
 /**
@@ -110,7 +112,7 @@ export function changeTrailStep(
   const completedStepIds = new Set(current?.completedStepIds ?? []);
   if (completed) completedStepIds.add(stepId);
   else completedStepIds.delete(stepId);
-  return { id: trail.id, completedStepIds: [...completedStepIds], updatedAt };
+  return { ...current, id: trail.id, completedStepIds: [...completedStepIds], updatedAt };
 }
 
 export function resourceForStep(step: TrailStep) {

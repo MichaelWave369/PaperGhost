@@ -18,6 +18,15 @@ Created from the July 4, 2026 *PaperGhost / CodexOS Master Design Spec v0.1*. Th
 
 **Important v0.1 limits:** Imported publications are stored **only in this browser's origin**; clearing site data, using private browsing, changing devices or reinstalling browsers can delete the library. IndexedDB is **not encrypted**, is not an archival backup, and browser storage limits apply. Always keep your original files. MDX is rendered as Markdown, never executed as code. PDF source pages are preserved as pages rather than reflowed. CBR, OCR, DRM circumvention, magazine authoring, actual newspaper folding and cross-device sync are not implemented.
 
+## Private Field Journals (Rung 7)
+
+Every step of the Human Essentials learning trails now has an **optional personal reflection**. Readers may write up to 3,000 characters about what they tried, learned, or would do differently. Entries save **only when the reader explicitly selects "Save reflection"**. Writing a reflection does not automatically check off a trail activity.
+
+- **Privacy:** text remains in the existing IndexedDB `learningProgress` record. There is no new remote service, analytics event, account, or database migration.
+- **Resilience:** a ZIP backup includes optional `reflections` fields inside the current GhostShelf v1 manifest's `learningProgress` records. Old backups and records without notes remain valid. Restore validates text lengths and step IDs before storing any data. Existing local trail progress takes precedence when restoring the same trail ID.
+- **Portability:** `Download my journal` creates an **unencrypted Markdown file** on the device, only by explicit action. People should not write passwords or other highly sensitive credentials in journals.
+- **Accessibility:** descriptive labels, keyboard-accessible text areas and explicit save states.
+
 ## Human Essentials Learning Trails (Rung 6)
 
 Six optional, self-paced learning paths put the existing free Commons resources to practical use. The paths cover learning, personal finance, digital safety, communication, making things, and everyday wellbeing. Each offers three real-life exercises with an explicit link to its relevant Field Guide or publisher's page.
