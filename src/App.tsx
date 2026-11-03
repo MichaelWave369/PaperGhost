@@ -9,6 +9,7 @@ import { ORIGINAL_GUIDES, guideFile } from './lib/commons';
 import { createStarterPackZip, getGuidePackItems, PACK_FILE_NAME, planGuidePack } from './lib/guidePack';
 import type { OfflineGuide } from './lib/commons';
 import { CommonsLibrary } from './components/CommonsLibrary';
+import { OfflineReadinessDesk } from './components/OfflineReadinessDesk';
 import { friendlyBytes, localDate } from './lib/utils';
 import { Reader } from './components/Reader';
 import { GhostMark } from './components/GhostMark';
@@ -234,7 +235,7 @@ function App() {
               <GhostMark size={43} />
               <span>PaperGhost<small>THE DIGITAL PAPER VESSEL</small></span>
             </a>
-            <div className="topbar-right"><span className="offline-tag"><span aria-hidden="true">●</span> LOCAL-FIRST</span><a href="#commons-library">Free Library</a><a href="https://github.com/MichaelWave369/PaperGhost" target="_blank" rel="noreferrer">Source &amp; roadmap ↗</a></div>
+            <div className="topbar-right"><span className="offline-tag"><span aria-hidden="true">●</span> LOCAL-FIRST</span><a href="#commons-library">Free Library</a><a href="#offline-readiness">Offline check</a><a href="https://github.com/MichaelWave369/PaperGhost" target="_blank" rel="noreferrer">Source &amp; roadmap ↗</a></div>
           </header>
           <main id="main">
             <section className="masthead" aria-labelledby="hero-title">
@@ -297,6 +298,12 @@ function App() {
               </div>
               {publications.length > 0 ? <div className="drop-hint">Drop more PDF, EPUB, CBZ or text files anywhere on the shelf to import.</div> : null}
             </section>
+            <OfflineReadinessDesk
+              publications={publications}
+              busy={busy}
+              onBackup={() => void downloadBackup()}
+              onRestore={() => backupInput.current?.click()}
+            />
             <CommonsLibrary
               publications={publications}
               busy={busy}

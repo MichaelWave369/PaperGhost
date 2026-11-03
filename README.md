@@ -18,6 +18,19 @@ Created from the July 4, 2026 *PaperGhost / CodexOS Master Design Spec v0.1*. Th
 
 **Important v0.1 limits:** Imported publications are stored **only in this browser's origin**; clearing site data, using private browsing, changing devices or reinstalling browsers can delete the library. IndexedDB is **not encrypted**, is not an archival backup, and browser storage limits apply. Always keep your original files. MDX is rendered as Markdown, never executed as code. PDF source pages are preserved as pages rather than reflowed. CBR, OCR, DRM circumvention, magazine authoring, actual newspaper folding and cross-device sync are not implemented.
 
+## Offline Readiness & Recovery Desk (Rung 10)
+
+A new **Offline check** link opens a plain-language diagnostics desk beneath GhostShelf. It runs entirely inside the user's browser without contacting a server, uploading library content or modifying storage just to display status.
+
+- **Network hint:** Reports `navigator.onLine` only as a *browser hint*, never proof a remote source is reachable.
+- **App shell:** Checks whether the GitHub Pages PaperGhost service worker is registered and active or currently controls the page. **A registered or controlling worker is not proof the full app is cached or will open offline.** Test by launching the app and a local guide while disconnected.
+- **Storage persistence:** Shows whether the browser reports persistent or best-effort storage. A separate **Ask browser to protect storage** button requests `navigator.storage.persist()` only on explicit user action. Permission may be denied or unsupported; even granted persistence cannot protect against manual site-data deletion.
+- **Approximate storage:** Shows browser-reported origin usage/quota estimates and GhostShelf source sizes separately. These are estimates, not a disk space guarantee or proof that source blobs are intact.
+- **Recovery shortcuts:** Create a full GhostShelf ZIP or choose a restore ZIP from the same desk. A backup is **unencrypted** and contains personal publications, notes, journals, progress and completed worksheets, unlike the shareable starter pack.
+- **Offline smoke-test instructions:** A short guided test makes no claim until the user has actually tried opening and reading offline.
+
+No new dependencies, backend endpoints, IndexedDB version changes, private logging, PWA configuration changes or background network tests.
+
 ## Offline Human Essentials Starter Pack (Rung 9)
 
 The Commons now offers two explicit, local-first ways to take its original materials offline:

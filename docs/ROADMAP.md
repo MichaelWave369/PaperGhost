@@ -86,6 +86,15 @@ Source: PaperGhost / CodexOS Master Design Spec v0.1, July 4, 2026.
 - Keep third-party publications only as publisher links, and include honest PWA/cache retention limitations.
 - Tests for duplicate planning, original-content verification and ZIP contents/hashes.
 
+## Rung 2j: Offline Readiness & Recovery Desk (this PR)
+
+- Browser-local, read-only checks for browser network hints, service-worker activation/controller state and storage persistence.
+- Clear unsupported/error states without claiming cached app readiness or server reachability.
+- Explicit, optional persistent-storage request only through direct user action; explain denial and remaining data-loss risks.
+- Approximate browser-origin usage and quota, separate from the original source sizes in GhostShelf.
+- Shortcuts to existing full-library backup/restore and step-by-step real offline smoke-test guidance.
+- Focused tests for formatting and honest state messages; no new database migrations, external service dependencies or telemetry.
+
 ## Rung 3: Enter the Field Pressroom
 
 - Editor templates, layout blocks, cover creator, issue manifest.
