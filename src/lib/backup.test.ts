@@ -79,6 +79,43 @@ describe('GhostShelf portable backup', () => {
     expect(validateManifest(olderBackup).learningProgress).toBeUndefined();
   });
 
+  it('round-trips private journal reflections within the existing ZIP v1 manifest', async () => {
+    const progress: LearningProgress = {
+      id: 'clear-thinking',
+      completedStepIds: ['question'],
+      updatedAt: '2026-11-03T00:00:00Z',
+      reflections: { question: 'A practical thing I learned today.' }
+    };
+    const zip = await createBackupArchive([], [], [], [progress]);
+    const contents = await JSZip.loadAsync(zip);
+    const manifest = validateManifest(JSON.parse(await contents.file('manifest.json')!.async('string')));
+    expect(manifest.version).toBe(1);
+    expect(manifest.learningProgress?.[0].reflections).toEqual(progress.reflections);
+  });
+
+  it('rejects unsafe or excessive journal reflections before restore', async () => {
+    const base = {
+      kind: 'paperghost.ghostshelf.backup', version: 1,
+      createdAt: '2026-11-03T00:00:00Z',
+      publications: [], notes: [], receipts: []
+    };
+    const progress = {
+      id: 'clear-thinking', completedStepIds: [], updatedAt: '2026-11-03T00:00:00Z'
+    };
+    expect(() => validateManifest({
+      ...base, learningProgress: [{ ...progress, reflections: { question: 'Valid note' } }]
+    })).not.toThrow();
+    expect(() => validateManifest({
+      ...base, learningProgress: [{ ...progress, reflections: { question: 'x'.repeat(3001) } }]
+    })).toThrow('learning trail');
+    expect(() => validateManifest({
+      ...base, learningProgress: [{ ...progress, reflections: { '../bad': 'Unsafe' } }]
+    })).toThrow('learning trail');
+    expect(() => validateManifest({
+      ...base, learningProgress: [{ ...progress, reflections: { question: 9 } }]
+    })).toThrow('learning trail');
+  });
+
   it('rejects malformed or duplicate learning progress records before restoring', async () => {
     const { metadata } = await fixture();
     const base = {

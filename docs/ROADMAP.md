@@ -60,6 +60,15 @@ Source: PaperGhost / CodexOS Master Design Spec v0.1, July 4, 2026.
 - Optional learning progress entries in backward-compatible GhostShelf ZIP v1 manifests, with strict validation and atomic restore.
 - Accessible, responsive learning path controls; tests for source references, progress logic, backup roundtrip and DB migration.
 
+## Rung 2g: Private Field Journals (this PR)
+
+- Per-step optional reflections in each Human Essentials learning trail, with explicit Save and clear unsaved/saved indicators.
+- Preserve completion checkboxes independently of journaling; no automatic assessments or tracking.
+- Local only: reuse the existing IndexedDB progress store without a schema change.
+- Include notes in backwards-compatible ZIP v1 GhostShelf exports and validate before restore.
+- Explicit unencrypted Markdown journal export, with clear privacy warnings.
+- Journal logic, backup validation and non-mutation tests; restore-event refresh.
+
 ## Rung 3: Enter the Field Pressroom
 
 - Editor templates, layout blocks, cover creator, issue manifest.

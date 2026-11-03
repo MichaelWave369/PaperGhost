@@ -374,3 +374,22 @@ h1 em { color: #d8bf84; font-weight: 400; }
   .trail-step-check { grid-column: 2; }
   .trail-detail-top { flex-wrap: wrap; }
 }
+
+/* Rung 7: private Field Journals, one reflection per optional activity */
+.trail-detail-buttons { display: flex; flex-wrap: wrap; gap: 9px; justify-content: flex-end; }
+.trail-detail-buttons button { border: 1px solid #ad9981; background: transparent; color: #203951; padding: 10px 13px; }
+.trail-detail-buttons button:first-child { background: #21465a; color: #fff8ea; border-color: #21465a; }
+.trail-detail-buttons button:disabled { opacity: .45; cursor: not-allowed; }
+.field-journal-editor { border: 1px solid #d4c7ae; background: #f4ede0; margin-top: 20px; padding: 16px; border-radius: 2px; }
+.field-journal-editor > label { display: block; color: #28435a; font: 600 13px 'DM Sans', system-ui, sans-serif; }
+.field-journal-editor p { margin: 6px 0 13px; font-size: 11px; color: #696357; line-height: 1.7; }
+.field-journal-editor textarea { width: 100%; min-height: 92px; resize: vertical; padding: 12px 13px; border: 1px solid #b6a88f; border-radius: 2px; color: #142b42; background: #fffdf7; font: 13px/1.7 'DM Sans', system-ui, sans-serif; }
+.field-journal-editor textarea:focus-visible { outline: 3px solid #7298a7; outline-offset: 2px; }
+.field-journal-actions { display: flex; justify-content: space-between; gap: 10px; align-items: center; flex-wrap: wrap; margin-top: 11px; }
+.field-journal-actions span { color: #605e59; font-size: 11px; }
+.field-journal-actions button { color: #fff8eb; background: #244c60; border: 1px solid #244c60; border-radius: 2px; font-weight: 700; font-size: 11px; padding: 10px 14px; }
+.field-journal-actions button:disabled { opacity: .55; cursor: not-allowed; }
+@media(max-width:650px) {
+  .trail-detail-buttons { justify-content: flex-start; width: 100%; }
+  .field-journal-editor { padding: 13px; }
+}

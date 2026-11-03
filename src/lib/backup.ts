@@ -93,8 +93,16 @@ function validLearningProgress(value: unknown): value is LearningProgress {
       !Array.isArray(value.completedStepIds) || value.completedStepIds.length > 50 ||
       typeof value.updatedAt !== 'string' || value.updatedAt.length > 64) return false;
   const steps = value.completedStepIds;
-  return steps.every(step => typeof step === 'string' && /^[a-z0-9-]{1,80}$/.test(step)) &&
-    new Set(steps).size === steps.length;
+  if (!steps.every(step => typeof step === 'string' && /^[a-z0-9-]{1,80}$/.test(step)) ||
+      new Set(steps).size !== steps.length) return false;
+  if (value.reflections !== undefined) {
+    if (!record(value.reflections) || Object.keys(value.reflections).length > 50) return false;
+    for (const [stepId, note] of Object.entries(value.reflections)) {
+      if (!/^[a-z0-9-]{1,80}$/.test(stepId) || typeof note !== 'string' ||
+          note.length === 0 || note.length > 3000 || !note.trim()) return false;
+    }
+  }
+  return true;
 }
 
 /** Only accept the versioned schema we actually produce. No executable content is restored. */
