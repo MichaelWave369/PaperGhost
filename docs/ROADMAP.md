@@ -77,6 +77,15 @@ Source: PaperGhost / CodexOS Master Design Spec v0.1, July 4, 2026.
 - Backwards-compatible optional worksheet draft records in GhostShelf ZIP v1 exports and imports, schema validation and local-conflict preservation.
 - Automated template quality, validation, export and legacy storage migration tests; no telemetry or external APIs.
 
+## Rung 2i: Offline Human Essentials starter pack (this PR)
+
+- Bulk-add exactly the eight original MIT-licensed Field Guides to GhostShelf in one action, using SHA-256 to avoid false duplicates from same-named personal files.
+- Download a portable starter ZIP containing eight original guides and eight blank original worksheets, with an MIT license, usage README and per-file SHA-256 manifest.
+- Distinguish shareable first-party starter resources from GhostShelf backups with private books/notes/journals/drafts.
+- Clear status, partial-failure feedback and count of verified original guides already stored locally.
+- Keep third-party publications only as publisher links, and include honest PWA/cache retention limitations.
+- Tests for duplicate planning, original-content verification and ZIP contents/hashes.
+
 ## Rung 3: Enter the Field Pressroom
 
 - Editor templates, layout blocks, cover creator, issue manifest.

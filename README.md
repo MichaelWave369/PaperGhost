@@ -18,6 +18,15 @@ Created from the July 4, 2026 *PaperGhost / CodexOS Master Design Spec v0.1*. Th
 
 **Important v0.1 limits:** Imported publications are stored **only in this browser's origin**; clearing site data, using private browsing, changing devices or reinstalling browsers can delete the library. IndexedDB is **not encrypted**, is not an archival backup, and browser storage limits apply. Always keep your original files. MDX is rendered as Markdown, never executed as code. PDF source pages are preserved as pages rather than reflowed. CBR, OCR, DRM circumvention, magazine authoring, actual newspaper folding and cross-device sync are not implemented.
 
+## Offline Human Essentials Starter Pack (Rung 9)
+
+The Commons now offers two explicit, local-first ways to take its original materials offline:
+
+- **Add missing guides to GhostShelf:** One click verifies the SHA-256 source bytes of all 8 bundled original Field Guides, checks which ones have already been imported, and adds **only missing original copies** through the existing GhostShelf import and InkLedger source-receipt pipeline. Same-named user documents are not mistaken for originals. Import failures are shown individually; successful imports remain available.
+- **Download free starter ZIP:** Builds a portable ZIP locally, containing **8 original full Markdown guides and 8 blank Markdown worksheets**, a README, the MIT license and an integrity manifest with each file's SHA-256. This is a separate, shareable pack; it **never contains** private books, journal entries, filled-in worksheets or reading history.
+
+The 12 external catalog entries stay as links to their publishers; PaperGhost does **not** mirror or redistribute their publications. The PWA must first be loaded/installed while online for its app shell to be cached, and browser cache or IndexedDB content can later be removed by the browser or user. Use **GhostShelf → Backup ZIP** to safeguard actual personal library data and reading progress; the starter pack is not a personal backup.
+
 ## Human Essentials Workbench (Rung 8)
 
 Eight original MIT-licensed, editable worksheets are available directly in the Human Essentials Commons: weekly life map, money/bill planning, project starter, learning planner, claim/evidence ledger, digital safety checkup, communication practice, and household readiness.

@@ -5,7 +5,8 @@ import { allPublications, deletePublication, savePublication } from './lib/db';
 import { importFile } from './lib/imports';
 import { exportShelfBackup, restoreShelfBackup } from './lib/backup';
 import { demoFile } from './lib/demo';
-import { guideFile } from './lib/commons';
+import { ORIGINAL_GUIDES, guideFile } from './lib/commons';
+import { createStarterPackZip, getGuidePackItems, PACK_FILE_NAME, planGuidePack } from './lib/guidePack';
 import type { OfflineGuide } from './lib/commons';
 import { CommonsLibrary } from './components/CommonsLibrary';
 import { friendlyBytes, localDate } from './lib/utils';
@@ -27,6 +28,8 @@ function App() {
   const [dragging, setDragging] = useState(false);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
+  const [packMessage, setPackMessage] = useState('');
+  const [packError, setPackError] = useState('');
   const [ready, setReady] = useState(false);
   const fileInput = useRef<HTMLInputElement>(null);
   const backupInput = useRef<HTMLInputElement>(null);
@@ -109,17 +112,85 @@ function App() {
 
   const openFieldGuide = async (guide: OfflineGuide) => {
     if (busy) return;
-    const existing = publications.find(publication => publication.fileName === 'Field-Library-' + guide.id + '.md');
-    if (existing) { setActiveId(existing.id); return; }
     setBusy(true);
     setError('');
     setNotice('');
     try {
-      const publication = await importFile(guideFile(guide));
-      await refresh();
-      setActiveId(publication.id);
+      const original = (await getGuidePackItems()).find(item => item.id === guide.id);
+      const existing = original ? publications.find(publication =>
+        publication.fileName === original.fileName && publication.hash.toLowerCase() === original.hash) : undefined;
+      if (existing) {
+        setActiveId(existing.id);
+      } else {
+        const publication = await importFile(guideFile(guide));
+        await refresh();
+        setActiveId(publication.id);
+      }
     } catch (reason) {
       setError('Field Guide could not open: ' + String(reason));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const addAllOriginalGuides = async () => {
+    if (busy) return;
+    setBusy(true);
+    setPackError('');
+    setPackMessage('Checking the original guide sources against your local GhostShelf…');
+    try {
+      const items = await getGuidePackItems();
+      const plan = planGuidePack(publications, items);
+      let imported = 0;
+      const failures: string[] = [];
+      for (let i = 0; i < plan.missing.length; i++) {
+        const missing = plan.missing[i];
+        const guide = ORIGINAL_GUIDES.find(item => item.id === missing.id);
+        if (!guide) {
+          failures.push(missing.id + ': guide unavailable');
+          continue;
+        }
+        setPackMessage('Adding original guides locally: ' + (i + 1) + ' of ' + plan.missing.length + '…');
+        try {
+          await importFile(guideFile(guide));
+          imported += 1;
+        } catch (reason) {
+          failures.push(guide.title + ': ' + String(reason instanceof Error ? reason.message : reason));
+        }
+      }
+      await refresh();
+      setPackMessage(imported
+        ? 'Added ' + imported + ' original guide' + (imported === 1 ? '' : 's') + ' to GhostShelf. ' +
+          plan.installed.length + ' were already installed. Back up GhostShelf to protect your copies.'
+        : plan.missing.length ? 'No guides could be added. Check the error below.' : 'All eight original guides are already in GhostShelf.');
+      if (failures.length) setPackError(failures.join(' | '));
+    } catch (reason) {
+      setPackError('Could not add the offline library: ' + String(reason));
+      setPackMessage('');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const downloadOriginalStarterPack = async () => {
+    if (busy) return;
+    setBusy(true);
+    setPackError('');
+    setPackMessage('Building your free starter ZIP locally…');
+    try {
+      const blob = await createStarterPackZip();
+      const url = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = url;
+      anchor.download = PACK_FILE_NAME;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      setPackMessage('Starter ZIP prepared with 8 original guides and 8 blank worksheets. It contains no personal data.');
+    } catch (reason) {
+      setPackError('Could not create starter ZIP: ' + String(reason));
+      setPackMessage('');
     } finally {
       setBusy(false);
     }
@@ -231,6 +302,10 @@ function App() {
               busy={busy}
               onAddGuide={guide => void openFieldGuide(guide)}
               onOpenPublication={setActiveId}
+              onAddAllGuides={() => void addAllOriginalGuides()}
+              onDownloadPack={() => void downloadOriginalStarterPack()}
+              packMessage={packMessage}
+              packError={packError}
             />
             <section className="system-strip" aria-labelledby="system-title">
               <p className="eyebrow" id="system-title">BENEATH THE PAGE</p>
