@@ -18,6 +18,16 @@ Created from the July 4, 2026 *PaperGhost / CodexOS Master Design Spec v0.1*. Th
 
 **Important v0.1 limits:** Imported publications are stored **only in this browser's origin**; clearing site data, using private browsing, changing devices or reinstalling browsers can delete the library. IndexedDB is **not encrypted**, is not an archival backup, and browser storage limits apply. Always keep your original files. MDX is rendered as Markdown, never executed as code. PDF source pages are preserved as pages rather than reflowed. CBR, OCR, DRM circumvention, magazine authoring, actual newspaper folding and cross-device sync are not implemented.
 
+## Human Essentials Workbench (Rung 8)
+
+Eight original MIT-licensed, editable worksheets are available directly in the Human Essentials Commons: weekly life map, money/bill planning, project starter, learning planner, claim/evidence ledger, digital safety checkup, communication practice, and household readiness.
+
+- Select a worksheet, edit its Markdown prompts and click **Save locally**. Blank templates stay available when no personal copy exists.
+- **Preview / Print** renders a safe Markdown view; **Print preview** opens the native browser print dialog. Use **Download .md** to retain a portable plain-text copy, even when changes have not been saved locally.
+- Your personal worksheet drafts are stored in a dedicated IndexedDB `worksheetDrafts` store. A non-destructive **database migration v2 → v3** retains prior source blobs, notes, reading state, learning trails and journals. No accounts or new runtime dependencies.
+- The existing GhostShelf ZIP **manifest version 1** remains valid. An optional `worksheetDrafts` array carries saved worksheets; old ZIPs still restore. Imported worksheets cannot silently overwrite local worksheets with the same template ID.
+- **Privacy:** Drafts, exported Markdown and GhostShelf ZIP files are **not encrypted**. Avoid passwords, security answers, identity numbers, or sensitive confidential records. No uploading or analytics.
+
 ## Private Field Journals (Rung 7)
 
 Every step of the Human Essentials learning trails now has an **optional personal reflection**. Readers may write up to 3,000 characters about what they tried, learned, or would do differently. Entries save **only when the reader explicitly selects "Save reflection"**. Writing a reflection does not automatically check off a trail activity.
