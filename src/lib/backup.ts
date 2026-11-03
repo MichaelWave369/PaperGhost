@@ -1,7 +1,9 @@
 import JSZip from 'jszip';
 import type { InkReceipt, PersonalNote, Publication } from '../types';
 import type { LearningProgress } from './trails';
-import { allLearningProgress, allPublications, notesFor, receiptsFor, restoreSnapshot, sourceBlob } from './db';
+import type { WorksheetDraft } from './worksheets';
+import { validateWorksheetDraft, MAX_WORKSHEET_DRAFTS } from './worksheets';
+import { allLearningProgress, allPublications, allWorksheetDrafts, notesFor, receiptsFor, restoreSnapshot, sourceBlob } from './db';
 
 const BACKUP_KIND = 'paperghost.ghostshelf.backup';
 const BACKUP_VERSION = 1;
@@ -27,6 +29,7 @@ export interface BackupManifest {
   notes: PersonalNote[];
   receipts: InkReceipt[];
   learningProgress?: LearningProgress[];
+  worksheetDrafts?: WorksheetDraft[];
 }
 
 export interface RestoreSummary {
@@ -35,6 +38,7 @@ export interface RestoreSummary {
   notes: number;
   receipts: number;
   learningTrails: number;
+  worksheets: number;
 }
 
 function record(value: unknown): value is Record<string, unknown> {
@@ -113,7 +117,8 @@ export function validateManifest(raw: unknown): BackupManifest {
   if (!Array.isArray(raw.publications) || raw.publications.length > MAX_PUBLICATIONS ||
       !Array.isArray(raw.notes) || raw.notes.length > 100000 ||
       !Array.isArray(raw.receipts) || raw.receipts.length > 100000 ||
-      (raw.learningProgress !== undefined && (!Array.isArray(raw.learningProgress) || raw.learningProgress.length > 1000))) {
+      (raw.learningProgress !== undefined && (!Array.isArray(raw.learningProgress) || raw.learningProgress.length > 1000)) ||
+      (raw.worksheetDrafts !== undefined && (!Array.isArray(raw.worksheetDrafts) || raw.worksheetDrafts.length > MAX_WORKSHEET_DRAFTS))) {
     throw new Error('The GhostShelf backup has invalid or excessive record counts.');
   }
   const ids = new Set<string>();
@@ -149,6 +154,14 @@ export function validateManifest(raw: unknown): BackupManifest {
     }
     progressIds.add(progress.id);
   }
+  const worksheetDrafts = (raw.worksheetDrafts ?? []) as unknown[];
+  const draftIds = new Set<string>();
+  for (const draft of worksheetDrafts) {
+    if (!validateWorksheetDraft(draft) || draftIds.has(draft.id)) {
+      throw new Error('The backup contains invalid or duplicate worksheet drafts.');
+    }
+    draftIds.add(draft.id);
+  }
   return raw as unknown as BackupManifest;
 }
 
@@ -162,7 +175,8 @@ export async function createBackupArchive(
   publications: { metadata: Publication; source: Blob }[],
   notes: PersonalNote[],
   receipts: InkReceipt[],
-  learningProgress: LearningProgress[] = []
+  learningProgress: LearningProgress[] = [],
+  worksheetDrafts: WorksheetDraft[] = []
 ): Promise<Blob> {
   if (publications.length > MAX_PUBLICATIONS) throw new Error('The library exceeds the backup publication limit.');
   const zip = new JSZip();
@@ -177,7 +191,7 @@ export async function createBackupArchive(
   }
   const manifest = validateManifest({
     kind: BACKUP_KIND, version: BACKUP_VERSION,
-    createdAt: new Date().toISOString(), publications: entries, notes, receipts, learningProgress
+    createdAt: new Date().toISOString(), publications: entries, notes, receipts, learningProgress, worksheetDrafts
   });
   zip.file('manifest.json', JSON.stringify(manifest, null, 2));
   return zip.generateAsync({ type: 'blob', compression: 'DEFLATE', compressionOptions: { level: 3 } });
@@ -193,7 +207,7 @@ export async function exportShelfBackup(): Promise<Blob> {
     notes.push(...await notesFor(publication.id));
     receipts.push(...await receiptsFor(publication.id));
   }
-  return createBackupArchive(items, notes, receipts, await allLearningProgress());
+  return createBackupArchive(items, notes, receipts, await allLearningProgress(), await allWorksheetDrafts());
 }
 
 /** Verifies every file before writing any record. A storage transaction commits all records or none. */
@@ -242,13 +256,20 @@ export async function restoreShelfBackup(archive: Blob): Promise<RestoreSummary>
   const incomingProgress = (manifest.learningProgress ?? [])
     .filter(progress => !knownProgressIds.has(progress.id));
 
+  // Never silently overwrite a local worksheet with a copy from a backup.
+  const existingDrafts = await allWorksheetDrafts();
+  const localDraftIds = new Set(existingDrafts.map(draft => draft.id));
+  const incomingDrafts = (manifest.worksheetDrafts ?? [])
+    .filter(draft => !localDraftIds.has(draft.id));
+
   // Preserve existing publication reading state and restore all new records atomically.
-  await restoreSnapshot(sources, manifest.notes, manifest.receipts, incomingProgress);
+  await restoreSnapshot(sources, manifest.notes, manifest.receipts, incomingProgress, incomingDrafts);
   return {
     restored: sources.length,
     skipped: skipped.size,
     notes: manifest.notes.length,
     receipts: manifest.receipts.length,
-    learningTrails: incomingProgress.length
+    learningTrails: incomingProgress.length,
+    worksheets: incomingDrafts.length
   };
 }

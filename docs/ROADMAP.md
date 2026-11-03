@@ -69,6 +69,14 @@ Source: PaperGhost / CodexOS Master Design Spec v0.1, July 4, 2026.
 - Explicit unencrypted Markdown journal export, with clear privacy warnings.
 - Journal logic, backup validation and non-mutation tests; restore-event refresh.
 
+## Rung 2h: Human Essentials Workbench (this PR)
+
+- Eight editable, original MIT-licensed practical worksheets spanning scheduling, finances, learning, evidence, projects, communications, security and preparedness.
+- Browser-local worksheet editor, explicit Save, Markdown export, formatted preview and browser-native printing.
+- IndexedDB version 3 migration with dedicated `worksheetDrafts` storage and non-destructive upgrades.
+- Backwards-compatible optional worksheet draft records in GhostShelf ZIP v1 exports and imports, schema validation and local-conflict preservation.
+- Automated template quality, validation, export and legacy storage migration tests; no telemetry or external APIs.
+
 ## Rung 3: Enter the Field Pressroom
 
 - Editor templates, layout blocks, cover creator, issue manifest.

@@ -1,8 +1,8 @@
 import 'fake-indexeddb/auto';
 import { describe, expect, it } from 'vitest';
-import { allLearningProgress, allPublications, saveLearningProgress, sourceBlob } from './db';
+import { allLearningProgress, allPublications, allWorksheetDrafts, saveWorksheetDraft, saveLearningProgress, sourceBlob } from './db';
 
-describe('GhostShelf IndexedDB v1 to v2 migration', () => {
+describe('GhostShelf IndexedDB legacy migration to v3', () => {
   it('retains existing publications, sources and notes, and adds progress without resetting data', async () => {
     const legacy = await new Promise<IDBDatabase>((resolve, reject) => {
       const request = indexedDB.open('paperghost-local', 1);
@@ -44,6 +44,10 @@ describe('GhostShelf IndexedDB v1 to v2 migration', () => {
     };
     await saveLearningProgress(progress);
     expect(await allLearningProgress()).toEqual([progress]);
+    expect(await (await sourceBlob('legacy-book')).text()).toBe('the original book');
+    const worksheet = { id: 'weekly-map', content: '# My plan', updatedAt: '2026-11-02T23:00:00Z', templateRevision: 1 };
+    await saveWorksheetDraft(worksheet);
+    expect(await allWorksheetDrafts()).toEqual([worksheet]);
     expect(await (await sourceBlob('legacy-book')).text()).toBe('the original book');
   });
 });

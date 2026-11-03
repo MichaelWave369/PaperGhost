@@ -393,3 +393,64 @@ h1 em { color: #d8bf84; font-weight: 400; }
   .trail-detail-buttons { justify-content: flex-start; width: 100%; }
   .field-journal-editor { padding: 13px; }
 }
+
+/* Rung 8: The Human Essentials Workbench */
+.worksheet-workbench { max-width: 1240px; margin: 42px auto 30px; padding: 30px 0 33px; border-top: 2px solid #2b4a5b; border-bottom: 1px solid #cebea5; }
+.worksheet-workbench-heading { display: flex; align-items: center; justify-content: space-between; gap: 25px; }
+.worksheet-workbench-heading h3 { font: 400 clamp(27px,3.2vw,40px)/1.25 'Libre Baskerville', Georgia, serif; letter-spacing: -.05em; margin: 11px 0 13px; color: #203a50; }
+.worksheet-workbench-heading p:not(.eyebrow) { font-size: 13px; line-height: 1.8; color: #666157; max-width: 780px; }
+.worksheet-count { color: #937a56; font: italic 22px 'Libre Baskerville', Georgia, serif; white-space: nowrap; }
+.worksheet-picker { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: 11px; margin-top: 26px; }
+.worksheet-tile { display: flex; flex-direction: column; text-align: left; align-items: stretch; border: 1px solid #cebea5; background: #faf7eb; padding: 17px; min-width: 0; min-height: 190px; border-top: 4px solid #8fa8a6; }
+.worksheet-tile.worksheet-selected { border: 2px solid #31566a; border-top: 4px solid #31566a; background: #e6eee9; }
+.worksheet-tile:hover:not(:disabled) { box-shadow: 3px 4px 0 #dacbb4; }
+.worksheet-tile span { color: #726853; text-transform: uppercase; font-size: 9px; letter-spacing: .1em; line-height: 1.5; font-weight: 700; }
+.worksheet-tile strong { color: #1d3a4f; font: 400 17px/1.4 'Libre Baskerville', Georgia, serif; margin: 14px 0 10px; }
+.worksheet-tile small { color: #63615a; font-size: 11px; line-height: 1.7; flex: 1; }
+.worksheet-tile em { color: #527365; margin-top: 12px; font-size: 10px; font-style: normal; font-weight: 700; }
+.worksheet-editor-shell { margin-top: 23px; padding: clamp(17px,3vw,30px); border: 1px solid #c5b49a; background: #f7f0e3; }
+.worksheet-editor-header { display: flex; align-items: start; gap: 16px; justify-content: space-between; }
+.worksheet-editor-header h4 { font: 400 clamp(23px,3vw,33px) 'Libre Baskerville',Georgia,serif; color: #1e3b52; margin: 8px 0; }
+.worksheet-editor-header p:not(.eyebrow) { color: #686153; font-size: 11px; line-height: 1.8; }
+.worksheet-close { border: 1px solid #b0a189; background: transparent; padding: 11px 14px; white-space: nowrap; }
+.worksheet-toolbar { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 18px 0 15px; }
+.worksheet-toolbar button { padding: 9px 16px; border: 1px solid #9ba49e; background: #f3ebdf; color: #294459; font-weight: 700; font-size: 11px; }
+.worksheet-toolbar button[aria-pressed="true"] { color: #fff; background: #2c5365; border-color: #2c5365; }
+.worksheet-toolbar > span { margin-left: auto; color: #75664e; font-size: 11px; }
+.worksheet-text-editor { display: block; color: #30495a; font-size: 12px; font-weight: 700; }
+.worksheet-text-editor span { display: block; margin-bottom: 10px; }
+.worksheet-text-editor textarea { display: block; width: 100%; min-height: 420px; padding: 19px; resize: vertical; border: 1px solid #b8aa91; background: #fffdf9; color: #172e40; font: 13px/1.6 ui-monospace, SFMono-Regular, Consolas, monospace; }
+.worksheet-paper { background: #fffdf9; color: #26333c; border: 1px solid #d2c7b6; min-height: 440px; max-width: 850px; margin: 0 auto; padding: clamp(20px,4vw,45px); box-shadow: 0 8px 20px #776b5528; font: 14px/1.7 Georgia, serif; overflow-wrap: anywhere; }
+.worksheet-paper h1, .worksheet-paper h2, .worksheet-paper h3 { color: #243f54; margin-top: 25px; margin-bottom: 9px; font-weight: 400; line-height: 1.3; }
+.worksheet-paper h1 { font-size: 30px; margin-top: 0; }
+.worksheet-paper h2 { font-size: 21px; }
+.worksheet-paper h3 { font-size: 17px; }
+.worksheet-paper p, .worksheet-paper ul, .worksheet-paper ol { margin: 9px 0 13px; }
+.worksheet-paper ul, .worksheet-paper ol { padding-left: 23px; }
+.worksheet-paper table { width: 100%; border-collapse: collapse; }
+.worksheet-paper th, .worksheet-paper td { border: 1px solid #b7b0a3; padding: 8px; text-align: left; }
+.worksheet-paper pre { white-space: pre-wrap; }
+.worksheet-editor-actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 17px 0; }
+.worksheet-editor-actions button { border: 1px solid #3b5767; padding: 12px 16px; background: #f6efe5; color: #294459; font-size: 11px; font-weight: 700; }
+.worksheet-editor-actions button.worksheet-save { background: #274d5d; color: #fff; }
+.worksheet-editor-actions button.worksheet-reset { margin-left: auto; border-color: #b79b88; color: #885043; background: transparent; }
+.worksheet-editor-actions button:disabled { opacity: .45; cursor: not-allowed; }
+.worksheet-privacy, .worksheet-note { margin-top: 16px; color: #6b685f; font-size: 11px; line-height: 1.8; }
+@media(max-width:1080px){.worksheet-picker { grid-template-columns: repeat(3,minmax(0,1fr)); }}
+@media(max-width:720px) {
+  .worksheet-picker { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .worksheet-count { display: none; }
+}
+@media(max-width:490px) {
+  .worksheet-picker { grid-template-columns: 1fr; }
+  .worksheet-editor-header { flex-wrap: wrap; }
+  .worksheet-toolbar > span { margin-left: 0; width: 100%; }
+  .worksheet-editor-actions button.worksheet-reset { margin-left: 0; }
+}
+@media print {
+  @page { size: auto; margin: 18mm; }
+  body * { visibility: hidden !important; }
+  .worksheet-paper, .worksheet-paper * { visibility: visible !important; }
+  .worksheet-paper { position: absolute !important; top: 0 !important; left: 0 !important; width: 100% !important; max-width: none !important; min-height: 0 !important; margin: 0 !important; padding: 0 !important; border: none !important; box-shadow: none !important; color: black !important; background: white !important; }
+  .worksheet-paper h1, .worksheet-paper h2, .worksheet-paper h3 { color: black !important; }
+}

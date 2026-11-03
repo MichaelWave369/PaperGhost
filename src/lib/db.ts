@@ -1,9 +1,10 @@
 import type { InkReceipt, PersonalNote, Publication } from '../types';
 import type { LearningProgress } from './trails';
+import type { WorksheetDraft } from './worksheets';
 
 const DB_NAME = 'paperghost-local';
-const DB_VERSION = 2;
-type StoreName = 'publications' | 'sources' | 'notes' | 'receipts' | 'learningProgress';
+const DB_VERSION = 3;
+type StoreName = 'publications' | 'sources' | 'notes' | 'receipts' | 'learningProgress' | 'worksheetDrafts';
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
@@ -22,6 +23,9 @@ function openDatabase(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains('learningProgress')) {
         db.createObjectStore('learningProgress', { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains('worksheetDrafts')) {
+        db.createObjectStore('worksheetDrafts', { keyPath: 'id' });
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -97,6 +101,25 @@ export async function saveLearningProgress(progress: LearningProgress): Promise<
   await put('learningProgress', progress);
 }
 
+export async function allWorksheetDrafts(): Promise<WorksheetDraft[]> {
+  return getAll<WorksheetDraft>('worksheetDrafts');
+}
+export async function saveWorksheetDraft(draft: WorksheetDraft): Promise<void> {
+  await put('worksheetDrafts', draft);
+}
+export async function deleteWorksheetDraft(id: string): Promise<void> {
+  const db = await openDatabase();
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const tx = db.transaction('worksheetDrafts', 'readwrite');
+      tx.objectStore('worksheetDrafts').delete(id);
+      tx.oncomplete = () => resolve();
+      tx.onerror = () => reject(tx.error);
+      tx.onabort = () => reject(tx.error);
+    });
+  } finally { db.close(); }
+}
+
 export async function addNote(note: PersonalNote): Promise<void> { await put('notes', note); }
 export async function addReceipt(receipt: InkReceipt): Promise<void> { await put('receipts', receipt); }
 
@@ -132,12 +155,13 @@ export async function restoreSnapshot(
   entries: { publication: Publication; source: Blob }[],
   notes: PersonalNote[],
   receipts: InkReceipt[],
-  learningProgress: LearningProgress[] = []
+  learningProgress: LearningProgress[] = [],
+  worksheetDrafts: WorksheetDraft[] = []
 ): Promise<void> {
   const db = await openDatabase();
   try {
     await new Promise<void>((resolve, reject) => {
-      const tx = db.transaction(['publications', 'sources', 'notes', 'receipts', 'learningProgress'], 'readwrite');
+      const tx = db.transaction(['publications', 'sources', 'notes', 'receipts', 'learningProgress', 'worksheetDrafts'], 'readwrite');
       for (const entry of entries) {
         tx.objectStore('publications').put(entry.publication);
         tx.objectStore('sources').put({ id: entry.publication.id, blob: entry.source });
@@ -145,6 +169,7 @@ export async function restoreSnapshot(
       for (const note of notes) tx.objectStore('notes').put(note);
       for (const receipt of receipts) tx.objectStore('receipts').put(receipt);
       for (const progress of learningProgress) tx.objectStore('learningProgress').put(progress);
+      for (const draft of worksheetDrafts) tx.objectStore('worksheetDrafts').put(draft);
       tx.oncomplete = () => resolve();
       tx.onerror = () => reject(tx.error);
       tx.onabort = () => reject(tx.error);

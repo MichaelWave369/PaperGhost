@@ -97,7 +97,8 @@ function App() {
       await refresh();
       window.dispatchEvent(new Event('paperghost:restore'));
       setNotice('Restored ' + summary.restored + ' publications; ' + summary.skipped +
-        ' already on this shelf. Notes, InkLedger receipts, and ' + summary.learningTrails + ' new learning trails were included.');
+        ' already on this shelf. Notes, InkLedger receipts, ' + summary.learningTrails +
+        ' new learning trails and ' + summary.worksheets + ' new worksheets were included.');
     } catch (reason) {
       setError('Could not restore GhostShelf: ' + String(reason));
     } finally {

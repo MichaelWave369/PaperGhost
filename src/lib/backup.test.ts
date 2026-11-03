@@ -3,6 +3,7 @@ import JSZip from 'jszip';
 import { createBackupArchive, sha256, validateManifest } from './backup';
 import type { Publication } from '../types';
 import type { LearningProgress } from './trails';
+import { initialWorksheetDraft, FIELD_WORKSHEETS } from './worksheets';
 
 async function fixture() {
   const source = new Blob(['Hello PaperGhost'], { type: 'text/plain' });
@@ -114,6 +115,29 @@ describe('GhostShelf portable backup', () => {
     expect(() => validateManifest({
       ...base, learningProgress: [{ ...progress, reflections: { question: 9 } }]
     })).toThrow('learning trail');
+  });
+
+  it('preserves v1 backup compatibility with optional worksheet drafts', async () => {
+    const draft = { ...initialWorksheetDraft(FIELD_WORKSHEETS[0]), content: '# Personal plan', updatedAt: '2026-11-03T00:00:00Z' };
+    const archive = await createBackupArchive([], [], [], [], [draft]);
+    const zipped = await JSZip.loadAsync(archive);
+    const raw = JSON.parse(await zipped.file('manifest.json')!.async('string'));
+    expect(raw.version).toBe(1);
+    expect(validateManifest(raw).worksheetDrafts).toEqual([draft]);
+    delete raw.worksheetDrafts;
+    expect(() => validateManifest(raw)).not.toThrow();
+  });
+
+  it('rejects malformed or duplicate worksheet drafts', async () => {
+    const data = {
+      kind: 'paperghost.ghostshelf.backup', version: 1,
+      createdAt: '2026-11-03T00:00:00Z', publications: [], notes: [], receipts: []
+    };
+    const draft = initialWorksheetDraft(FIELD_WORKSHEETS[0]);
+    expect(() => validateManifest({ ...data, worksheetDrafts: [draft] })).not.toThrow();
+    expect(() => validateManifest({ ...data, worksheetDrafts: [draft, draft] })).toThrow('worksheet');
+    expect(() => validateManifest({ ...data, worksheetDrafts: [{ ...draft, content: 'a'.repeat(12001) }] })).toThrow('worksheet');
+    expect(() => validateManifest({ ...data, worksheetDrafts: [{ ...draft, id: '../bad' }] })).toThrow('worksheet');
   });
 
   it('rejects malformed or duplicate learning progress records before restoring', async () => {

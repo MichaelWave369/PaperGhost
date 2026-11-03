@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { LearningTrails } from './LearningTrails';
+import { WorksheetWorkbench } from './WorksheetWorkbench';
 import type { Publication } from '../types';
 import {
   COMMONS_CATEGORIES, COMMONS_RESOURCES, filterCommons, guideFileName
@@ -42,6 +43,7 @@ export function CommonsLibrary({ publications, busy, onAddGuide, onOpenPublicati
         <p><strong>Free outside resources:</strong> open the actual publisher's page. Download an EPUB or PDF from there and import it into GhostShelf if you want an offline copy. Their licenses and restrictions remain theirs.</p>
       </div>
       <LearningTrails publications={publications} busy={busy} onAddGuide={onAddGuide} onOpenPublication={onOpenPublication} />
+      <WorksheetWorkbench />
       <div className="commons-controls">
         <div className="commons-categories" role="group" aria-label="Library topics">
           <button type="button" className={category === 'All' ? 'active' : ''} aria-pressed={category === 'All'} onClick={() => setCategory('All')}>All topics</button>
